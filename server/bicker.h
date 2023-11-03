@@ -185,6 +185,7 @@ typedef struct
     signed int input_voltage;
     signed int output_voltage;
     signed int input_current;
+    signed int output_current;
     signed int charge_current;
     signed int battery_voltage;
     signed int battery_current;

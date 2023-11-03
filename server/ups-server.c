@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <math.h>
 #include "help.h"
+#include "apc.h"
 #include "bicker.h"
 
 #define NOTUSED(V) ((void)V)
@@ -335,6 +336,7 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "vcap3Voltage", json_object_new_double((double)(bs->vcap_voltage.cap3 / 1000.0)));
         json_object_object_add(jroot, "vcap4Voltage", json_object_new_double((double)(bs->vcap_voltage.cap4 / 1000.0)));
         json_object_object_add(jroot, "inputCurrent", json_object_new_int((int)bs->input_current));
+        json_object_object_add(jroot, "outputCurrent", json_object_new_int((int)bs->output_current));
         json_object_object_add(jroot, "batteryCurrent", json_object_new_int((int)bs->battery_current));
         json_object_object_add(jroot, "ucTemperature", json_object_new_int((int)bs->uc_temperature));
         json_object_object_add(jroot, "capacity", json_object_new_int((int)bs->capacity));

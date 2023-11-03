@@ -230,6 +230,7 @@ bicker_ups_status_t *get_ups_status()
     bicker_ups_status.input_voltage = (signed int)get_int(GET_INPUT_VOLTAGE1, BICKER_CMD_INDEX1);
     bicker_ups_status.input_current = (signed int)get_int(GET_INPUT_CURRENT1, BICKER_CMD_INDEX1);
     bicker_ups_status.output_voltage = (signed int)get_int(GET_OUTPUT_VOLTAGE1, BICKER_CMD_INDEX1);
+    bicker_ups_status.output_current = (signed int)get_int(GET_OUTPUT_CURRENT1, BICKER_CMD_INDEX1);
     bicker_ups_status.battery_current = (signed int)get_int(GET_BATTERY_CURRENT, BICKER_CMD_INDEX1);
     bicker_ups_status.battery_voltage = (signed int)get_int(GET_BATTERY_VOLTAGE, BICKER_CMD_INDEX1);
     bicker_ups_status.vcap_voltage.cap1 = (signed int)get_int(GET_VCAP1_VOLTAGE, BICKER_CMD_INDEX3);

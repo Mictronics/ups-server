@@ -10,6 +10,7 @@ function UpdateGui(upsStatus) {
   document.getElementById('fieldInputVoltage').value = upsStatus.inputVoltage.toFixed(1);
   document.getElementById('fieldInputCurrent').value = (upsStatus.inputCurrent / 1000).toFixed(3);
   document.getElementById('fieldOutputVoltage').value = upsStatus.outputVoltage.toFixed(1);
+  document.getElementById('fieldOutputCurrent').value = (upsStatus.outputCurrent / 1000).toFixed(3);
   document.getElementById('fieldBatteryVoltage').value = upsStatus.batteryVoltage.toFixed(1);
   document.getElementById('fieldBatteryCurrent').value = (upsStatus.batteryCurrent / 1000).toFixed(3);
   document.getElementById('fieldCell1Voltage').value = upsStatus.vcap1Voltage.toFixed(1);
