@@ -57,6 +57,7 @@ static unsigned char wsbuffer[WSBUFFERSIZE];
 static unsigned char *pwsbuffer = wsbuffer;
 static int wsbuffer_len = 0;
 pthread_mutex_t lock_established_conns = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lock_apc_status = PTHREAD_MUTEX_INITIALIZER;
 pthread_t ups_thread;
 pthread_t shutdown_thread;
 static unsigned int shutdown_delay = 1; // Default 1 second if not set in config
@@ -271,8 +272,11 @@ static void sighandler(int sig)
     // Cleanup
     pthread_mutex_unlock(&lock_established_conns);
     pthread_mutex_destroy(&lock_established_conns);
+    pthread_mutex_unlock(&lock_apc_status);
+    pthread_mutex_destroy(&lock_apc_status);
     lws_cancel_service(context);
     lws_context_destroy(context);
+    apc_destroy();
     config_destroy(&cfg);
     exit(EXIT_SUCCESS);
 }
@@ -379,7 +383,16 @@ static void *ups_read_handler(void *arg)
                 lwsl_warn("Power good detected. Shutdown cancelled.");
             }
         }
-        nanosleep(&ts, NULL); // Websocket update delay
+
+        // Update APC status report
+        if (pthread_mutex_trylock(&lock_apc_status) == 0)
+        {
+            apc_update_status(bs, &cfg, shutdown_delay);
+            pthread_mutex_unlock(&lock_apc_status);
+        }
+
+        // Websocket update delay
+        nanosleep(&ts, NULL);
     }
     // Cleanup
     close_serial();
@@ -429,6 +442,7 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "server.user", &info.uid);
         config_lookup_int(&cfg, "server.group", &info.gid);
         config_lookup_bool(&cfg, "server.daemonize", &daemonize);
+        config_lookup_int(&cfg, "server.shutdownDelay", (int *)&shutdown_delay);
         const char *buf = NULL;
         config_lookup_string(&cfg, "server.serial", &buf);
         set_serial_interface(buf);
@@ -436,15 +450,6 @@ int main(int argc, char **argv)
     else
     {
         lwsl_err("Server settings not found in configuration file.\n");
-    }
-    setting = config_lookup(&cfg, "shutdown");
-    if (setting != NULL)
-    {
-        config_lookup_int(&cfg, "shutdown.delay", (int *)&shutdown_delay);
-    }
-    else
-    {
-        lwsl_err("Shutdown settings not found in configuration file.\n");
     }
 
 #if !defined(LWS_NO_DAEMONIZE)
