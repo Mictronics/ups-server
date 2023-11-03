@@ -1,0 +1,9 @@
+node_modules
+.vscode
+*.o
+ups-server
+.prettierrc
+.eslintignore
+.eslintrc.json
+*.code-workspace
+server/notes

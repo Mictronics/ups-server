@@ -1,0 +1,3 @@
+client/* opt/www/ups-server
+server/ups-server opt/ups-server
+server/ups-server.cfg etc/default

@@ -1,0 +1,15 @@
+Source: ups-server
+Section: net
+Priority: optional
+Maintainer: Michael Wolf <michael@mictronics.de>
+Build-Depends: debhelper(>=10), libpthread-stubs0-dev, libwebsockets-dev(>=2), libconfig-dev, libjson-c-dev, pkg-config
+Standards-Version: 1.0.0
+Homepage: https://github.com/mictronics/ups-server
+Vcs-Git: https://github.com/Mictronics/ups-server.git
+
+Package: ups-server
+Architecture: any
+Depends: ${misc:Depends}, libpthread-stubs0-dev, libconfig9, libjson-c5
+Description:
+  Websocket server and web application for Bicker PSZ-1063 uExtension module in combination with a Bicker UPS.
+  This server provides data read from Bicker PSZ-1063 uExtension module to web application via websocket.

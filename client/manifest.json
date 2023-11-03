@@ -1,0 +1,49 @@
+{
+  "lang": "en",
+  "dir": "ltr",
+  "name": "UPS Status",
+  "description": "A websocket client reading data from a Bicker PSZ-1063 uExtension module in combination with a UPS",
+  "short_name": "bicker-ups-status",
+  "scope": "/",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "white",
+  "theme_color": "white",
+  "icons": [
+    {
+      "src": "img/favicon48.png",
+      "sizes": "48x48"
+    },
+        {
+      "src": "img/favicon16.png",
+      "sizes": "16x16",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/favicon32.png",
+      "sizes": "32x32",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/favicon64.png",
+      "sizes": "64x64",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/favicon128.png",
+      "sizes": "128x128",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/favicon256.png",
+      "sizes": "256x256",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/favicon512.png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}

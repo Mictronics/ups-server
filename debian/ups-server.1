@@ -1,0 +1,36 @@
+.TH ups-server Mictronics 1 "02 November 2023" "" ""
+.RS
+.SH NAME
+ups-server
+.SH VERSION
+1.0.0
+.SH DESCRIPTION
+\fBA websocket server reading data from a Bicker PSZ-1063 uExtension module in combination with a UPS.
+.SH USAGE
+\fBups-server [OPTION\.\.\.]
+.SH OPTIONS
+.TP
+.B
+\fB-c\fP, \fB--config\fP=<path>
+Configuration file path and name [default: /etc/default/ups-server.cfg]
+.TP
+.B
+\fB--nogps
+Disable GPS support
+.SS  HELP OPTIONS
+.TP
+.B
+\fB-?, \fB--help\fP
+Give this help list
+.TP
+.B
+\fB--usage\fP
+Give a short usage message
+.TP
+.B
+\fB-V\fP, \fB--version\fP
+Print program version
+.SH BUGS
+Report bugs to Michael Wolf <michael@mictronics.de>.
+.SH AUTHOR
+Michael Wolf

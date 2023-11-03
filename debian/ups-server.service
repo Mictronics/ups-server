@@ -1,0 +1,23 @@
+# Bicker UPS server service for systemd
+
+[Unit]
+Description= Bicker UPS websocket server
+Documentation=
+Wants=network.target
+After=network.target
+After=sockets.target
+
+[Service]
+User=bicker
+ExecStart=/opt/ups-server/ups-server
+Type=simple
+Restart=always
+RestartSec=30
+Nice=0
+SyslogIdentifier=BickerUPS
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=autodeploy
+
+[Install]
+WantedBy=default.target

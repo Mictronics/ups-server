@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui"
+    />
+    <title>UPS Status</title>
+    <meta
+      name="description"
+      content="A websocket client reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS."
+    />
+    <meta name="author" content="Michael Wolf" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css" />
+    <script type="text/javascript" src="./js/index.js"></script>
+    <style>
+      .input-group {
+        margin: 0.2em;
+      }
+      .input-group > .form-control,
+      .input-group > .form-floating,
+      .input-group > .form-select {
+        flex: none;
+        min-width: 10%;
+      }
+      .spinner {
+        position: fixed;
+        z-index: 1;
+        top: 50%;
+        left: 50%;
+        width: 5rem;
+        height: 5rem;
+      }
+    </style>
+  </head>
+  <body class="m-1 container-sm">
+    <div
+      id="connectionSpinner"
+      class="spinner spinner-border"
+      role="status"
+    ></div>
+    <h1><img src="img/favicon32.png" class="img-fluid me-3">UPS Status</h1>
+    <form>
+      <div class="row">
+        <label for="fieldSeries" class="col-sm-2 col-form-label">Series:</label>
+        <div class="col-sm-4">
+          <input
+            type="text"
+            readonly
+            class="form-control-plaintext"
+            id="fieldSeries"
+          />
+        </div>
+      </div>
+      <div class="row">
+        <label for="fieldType" class="col-sm-2 col-form-label">Type:</label>
+        <div class="col-sm-4">
+          <input
+            type="text"
+            readonly
+            class="form-control-plaintext"
+            id="fieldType"
+          />
+        </div>
+      </div>
+      <div class="row">
+        <label for="fieldHardware" class="col-sm-2 col-form-label"
+          >Hardware:</label
+        >
+        <div class="col-sm-4">
+          <input
+            type="text"
+            readonly
+            class="form-control-plaintext"
+            id="fieldHardware"
+          />
+        </div>
+      </div>
+      <div class="row">
+        <label for="fieldFirmware" class="col-sm-2 col-form-label"
+          >Firmware:</label
+        >
+        <div class="col-sm-4">
+          <input
+            type="text"
+            readonly
+            class="form-control-plaintext"
+            id="fieldFirmware"
+          />
+        </div>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Input Voltage</span>
+        <input id="fieldInputVoltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Input Current</span>
+        <input id="fieldInputCurrent" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">A</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Output Voltage</span>
+        <input id="fieldOutputVoltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Battery Voltage</span>
+        <input id="fieldBatteryVoltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Battery Current</span>
+        <input id="fieldBatteryCurrent" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">A</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Cell 1 Voltage</span>
+        <input id="fieldCell1Voltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Cell 2 Voltage</span>
+        <input id="fieldCell2Voltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Cell 3 Voltage</span>
+        <input id="fieldCell3Voltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Cell 4 Voltage</span>
+        <input id="fieldCell4Voltage" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">V</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Capacity</span>
+        <input id="fieldCapacity" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">F</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">ESR</span>
+        <input id="fieldEsr" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">mΩ</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">State of Charge</span>
+        <input id="fieldSoc" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">%</span>
+      </div>
+      <div class="input-group">
+        <span class="input-group-text col-sm-2">Board Temperature</span>
+        <input id="fieldBoardTemperature" type="text" class="form-control" />
+        <span class="input-group-text col-sm-1">°C</span>
+      </div>
+      <div class="card" style="width: fit-content">
+        <div class="card-header">Device Status</div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Charging</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevCharging"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Discharging</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevDischarging"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Power Present</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevPowerPresent"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Battery Present</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevBatteryPresent"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Shutdown Set</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevShutdownSet"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-sm-9">Over Current</span>
+          <div class="input-group-text">
+            <input
+              id="checkDevOverCurrent"
+              class="form-check-input mt-0"
+              type="checkbox"
+            />
+          </div>
+        </div>
+      </div>
+    </form>
+    <footer class="fw-lighter fix-bottom float-right">
+      UPS Status v1.0, 2023 Michael Wolf, mictronics.de
+    </footer>
+  </body>
+</html>
