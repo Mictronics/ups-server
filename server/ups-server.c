@@ -361,6 +361,9 @@ static void *ups_read_handler(void *arg)
         // Send immediately to web client
         lws_service(context, 0);
 
+        // Cleanup JSON allocated memory
+        json_object_put(jroot);
+
         // Check for UPS power fail and shutdown request
         if (bs->device_status.reg.is_power_present == false || bs->device_status.reg.is_shutdown_set == true)
         {
