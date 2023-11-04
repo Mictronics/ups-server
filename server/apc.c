@@ -44,7 +44,12 @@ static int wakeup_delay = 0;
  */
 void apc_update_status(bicker_ups_status_t *ups, config_t *cfg, unsigned int shutdown_delay)
 {
-    // Open file in memory
+    // Free previous APC report memory if any
+    if (apcstr != NULL)
+    {
+        free(apcstr);
+    }
+    // Open new report file in memory
     apcout = open_memstream(&apcstr, &apcstr_size);
     if (apcout == NULL)
     {
