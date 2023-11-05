@@ -31,6 +31,26 @@ function UpdateGui(upsStatus) {
   document.getElementById('fieldType').value = upsStatus.batteryType;
   document.getElementById('fieldHardware').value = upsStatus.hwRevision;
   document.getElementById('fieldFirmware').value = upsStatus.firmware;
+  document.getElementById('checkCharging').checked = upsStatus.chargeStatus & 0x01;
+  document.getElementById('checkBackup').checked = upsStatus.chargeStatus & 0x02;
+  document.getElementById('checkConstantVoltage').checked = upsStatus.chargeStatus & 0x04;
+  document.getElementById('checkConstantCurrent').checked = upsStatus.chargeStatus & 0x08;
+  document.getElementById('checkUnderVoltage').checked = upsStatus.chargeStatus & 0x10;
+  document.getElementById('checkInputCurrentLimit').checked = upsStatus.chargeStatus & 0x20;
+  document.getElementById('checkCapacitorPowerGood').checked = upsStatus.chargeStatus & 0x40;
+  document.getElementById('checkCapacitorShunting').checked = upsStatus.chargeStatus & 0x80;
+  document.getElementById('checkCapacitorBalancing').checked = upsStatus.chargeStatus & 0x100;
+  document.getElementById('checkCharging').checked = upsStatus.chargeStatus & 0x200;
+  document.getElementById('checkInputPowerFail').checked = upsStatus.chargeStatus & 0x800;
+  document.getElementById('checkCapEsrMeasurement').checked = upsStatus.monitorStatus & 0x01;
+  document.getElementById('checkCapEsrWaitingTime').checked = upsStatus.monitorStatus & 0x02;
+  document.getElementById('checkCapEsrWaitingCondition').checked = upsStatus.monitorStatus & 0x04;
+  document.getElementById('checkCapMeasurementComplete').checked = upsStatus.monitorStatus & 0x08;
+  document.getElementById('checkEsrMeasurementComplete').checked = upsStatus.monitorStatus & 0x10;
+  document.getElementById('checkCapMeasurementFail').checked = upsStatus.monitorStatus & 0x20;
+  document.getElementById('checkEsrMeasurementFail').checked = upsStatus.monitorStatus & 0x40;
+  document.getElementById('checkChargerDisabled').checked = upsStatus.monitorStatus & 0x100;
+  document.getElementById('checkChargerEnabled').checked = upsStatus.monitorStatus & 0x200;
 }
 
 /*
