@@ -36,11 +36,10 @@
 #include <sys/types.h>
 #include <math.h>
 #include "help.h"
-#include "apc.h"
 #include "bicker.h"
 
 #define NOTUSED(V) ((void)V)
-#define WSBUFFERSIZE 8192       // Byte
+#define WSBUFFERSIZE 1024       // Byte
 #define UPDATE_TIME_USEC 500000 // us = 2 Hz Websocket update
 
 static int num_clients = 0;
@@ -63,12 +62,24 @@ pthread_t shutdown_thread;
 static unsigned int shutdown_delay = 1; // Default 1 second if not set in config
 static bool ups_thread_exit = false;
 
+#define APC_RECORD_COUNT 25
+static FILE *apcout;
+static size_t apcstr_size = 0;
+static char *apcstr = NULL;
+static char *apcline = NULL;
+static double nominal_input_voltage = 0.0;
+static double nominal_battery_voltage = 0.0;
+static int power_return_percent = 0;
+static int max_backup_time = 0;
+static int wakeup_delay = 0;
+static char hostname[256];
+
 /**
  * One of these is created for each client connecting.
  */
-struct per_session_data
+struct ws_pss
 {
-    struct per_session_data *pss_list;
+    struct ws_pss *pss_list;
     struct lws *wsi;
     char publishing; // nonzero: peer is publishing to us
 };
@@ -76,18 +87,20 @@ struct per_session_data
 /**
  *  One of these is created for each vhost our protocol is used with.
  */
-struct per_vhost_data
+struct ws_vhd
 {
     struct lws_context *context;
     struct lws_vhost *vhost;
     const struct lws_protocols *protocol;
-    struct per_session_data *pss_list; // linked-list of live pss
+    struct ws_pss *pss_list; // linked-list of live pss
+    int len;
+    char buf[100];
 };
 
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
-const char *argp_program_version = "UPS Server v1.0";
+const char *argp_program_version = "UPS Server v1.0.1";
 const char args_doc[] = "";
 const char doc[] = "Websocket Server for Bicker PSZ-1063 uExtension module\nLicense GPL-3+\n(C) 2023 Michael Wolf\n"
                    "A websocket server reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS";
@@ -134,33 +147,17 @@ static void handle_client_request(void *in, size_t len)
  * Websocket protocol definition.
  */
 static struct lws_protocols protocols[] = {
-    {"http",
-     lws_callback_http_dummy,
-     0,
-     0,
-     0,
-     NULL,
-     0},
-    {"broadcast",
-     callback_broadcast,
-     sizeof(struct per_session_data),
-     WSBUFFERSIZE,
-     0, NULL, 0},
+    {"raw", callback_broadcast, sizeof(struct ws_pss), 0, 0, NULL, 0},
+    {"broadcast", callback_broadcast, sizeof(struct ws_pss), WSBUFFERSIZE, 0, NULL, 0},
+    {"http", lws_callback_http_dummy, 0, 0, 0, NULL, 0},
     {NULL, NULL, 0, 0, 0, NULL, 0} /* terminator */
 };
 
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len)
 {
-    struct per_session_data *pss =
-        (struct per_session_data *)user;
-    struct per_vhost_data *vhd =
-        (struct per_vhost_data *)
-            lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-                                     lws_get_protocol(wsi));
-    char buf[32];
-    int m;
-
+    struct ws_pss *pss = (struct ws_pss *)user;
+    struct ws_vhd *vhd = (struct ws_vhd *)lws_protocol_vh_priv_get(lws_get_vhost(wsi), lws_get_protocol(wsi));
     switch (reason)
     {
     case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
@@ -173,32 +170,24 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_PROTOCOL_INIT:
         vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
                                           lws_get_protocol(wsi),
-                                          sizeof(struct per_vhost_data));
+                                          sizeof(struct ws_vhd));
         vhd->context = lws_get_context(wsi);
         vhd->protocol = lws_get_protocol(wsi);
         vhd->vhost = lws_get_vhost(wsi);
         break;
 
     case LWS_CALLBACK_PROTOCOL_DESTROY:
-
         break;
 
     case LWS_CALLBACK_ESTABLISHED:
         ++num_clients;
         lwsl_notice("Client connected.\n");
         pss->wsi = wsi;
-        if (lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_GET_URI) > 0)
-            pss->publishing = !strcmp(buf, "/publisher");
+        if (lws_hdr_copy(wsi, vhd->buf, sizeof(vhd->buf), WSI_TOKEN_GET_URI) > 0)
+            pss->publishing = !strcmp(vhd->buf, "/publisher");
         if (!pss->publishing)
             /* add subscribers to the list of live pss held in the vhd */
             lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
-        // We got a client start polling sensors
-        lws_set_timer_usecs(wsi, UPDATE_TIME_USEC);
-        break;
-
-    case LWS_CALLBACK_TIMER:
-        lws_callback_on_writable_all_protocol(context, &protocols[1]);
-        lws_set_timer_usecs(wsi, UPDATE_TIME_USEC);
         break;
 
     case LWS_CALLBACK_CLOSED:
@@ -206,19 +195,18 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
         --num_clients;
         lwsl_notice("Client disconnected.\n");
         /* remove our closing pss from the list of live pss */
-        lws_ll_fwd_remove(struct per_session_data, pss_list,
+        lws_ll_fwd_remove(struct ws_pss, pss_list,
                           pss, vhd->pss_list);
         break;
 
     case LWS_CALLBACK_SERVER_WRITEABLE:
-
         if (pss->publishing)
             break;
         /* notice we allowed for LWS_PRE in the payload already */
-        m = lws_write(wsi, &pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], wsbuffer_len, LWS_WRITE_TEXT);
-        if (m < (int)wsbuffer_len)
+        vhd->len = lws_write(wsi, &pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], wsbuffer_len, LWS_WRITE_TEXT);
+        if (vhd->len < (int)wsbuffer_len)
         {
-            lwsl_err("ERROR %d writing to websocket\n", m);
+            lwsl_err("Error writing to websocket\n");
             return -1;
         }
         break;
@@ -244,10 +232,85 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
          * let every subscriber know we want to write something
          * on them as soon as they are ready
          */
-        lws_start_foreach_llp(struct per_session_data **, ppss, vhd->pss_list)
+        lws_start_foreach_llp(struct ws_pss **, ppss, vhd->pss_list)
         {
             if (!(*ppss)->publishing)
                 lws_callback_on_writable((*ppss)->wsi);
+        }
+        lws_end_foreach_llp(ppss, pss_list);
+        break;
+
+    /*
+     * RAW protocol handler for APC status report
+     */
+    case LWS_CALLBACK_RAW_ADOPT:
+        pss->wsi = wsi;
+        lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
+        break;
+
+    case LWS_CALLBACK_RAW_CLOSE:
+        lws_ll_fwd_remove(struct ws_pss, pss_list, pss, vhd->pss_list);
+        // Complete status report sent. Release lock allowing update.
+        pthread_mutex_unlock(&lock_apc_status);
+        break;
+
+    case LWS_CALLBACK_RAW_RX:
+        // React only on apcaccess status request
+        if (len == 8 && memcmp(in, "\x00\x06status", 8) != 0)
+        {
+            return 0;
+        }
+        // Prevent APC status report update as long as transmission is in progress.
+        pthread_mutex_lock(&lock_apc_status);
+        // NIS protocol requires line by line transfer.
+        apcline = strtok(apcstr, ";");
+        if (apcline != NULL)
+        {
+            // NIS protocol first two bytes (uint16_t) are the length of the following line.
+            vhd->len = strlen(apcline);
+            vhd->buf[0] = 0;
+            vhd->buf[1] = vhd->len; // Set line length
+            // Copy line content
+            memcpy(&vhd->buf[2], apcline, vhd->len);
+            vhd->len += 2; // uint16_t + line length
+        }
+        // Request first transmission callback
+        lws_start_foreach_llp(struct ws_pss **, ppss, vhd->pss_list)
+        {
+            lws_callback_on_writable((*ppss)->wsi);
+        }
+        lws_end_foreach_llp(ppss, pss_list);
+        break;
+
+    case LWS_CALLBACK_RAW_WRITEABLE:
+        // Send APC status report line
+        if (lws_write(wsi, (unsigned char *)vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) != vhd->len)
+        {
+            lwsl_err("Error writing raw socket.\n");
+            return 1;
+        }
+        // Get next APC report line
+        apcline = strtok(NULL, ";");
+        if (apcline != NULL)
+        {
+            // See above.
+            vhd->len = strlen(apcline);
+            vhd->buf[0] = 0;
+            vhd->buf[1] = vhd->len;
+            memcpy(&vhd->buf[2], apcline, vhd->len);
+            vhd->len += 2;
+        }
+        else
+        {
+            // No more lines in APC status report. Send zero length to close connection.
+            vhd->buf[0] = 0;
+            vhd->buf[1] = 0;
+            vhd->len = 2;
+        }
+        // Request next transmission callback
+        lws_start_foreach_llp(struct ws_pss **, ppss, vhd->pss_list)
+        {
+            lws_callback_on_writable((*ppss)->wsi);
         }
         lws_end_foreach_llp(ppss, pss_list);
         break;
@@ -276,7 +339,6 @@ static void sighandler(int sig)
     pthread_mutex_destroy(&lock_apc_status);
     lws_cancel_service(context);
     lws_context_destroy(context);
-    apc_destroy();
     config_destroy(&cfg);
     exit(EXIT_SUCCESS);
 }
@@ -301,6 +363,88 @@ static void *shutdown_handler(void *arg)
 }
 
 /**
+ * Create apcupsd compatible status report in memory.
+ */
+static void apc_update_status(bicker_ups_status_t *ups)
+{
+    // Free previous APC report memory if any
+    if (apcstr != NULL)
+    {
+        free(apcstr);
+    }
+    // Open new report file in memory
+    apcout = open_memstream(&apcstr, &apcstr_size);
+    if (apcout == NULL)
+    {
+        lwsl_warn("Creating APC status stream failed.");
+        return;
+    }
+
+    char tstr[50];
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(tstr, sizeof tstr, "%F %T %z", t);
+
+    /* ';' is a delimiter used in raw socket callback to separate lines.
+     * We send the line including the line break.
+     */
+    // Create dummy header, file size yet unknown.
+    fprintf(apcout, "APC      : 001,%03u,0000\n;", APC_RECORD_COUNT);
+    fprintf(apcout, "DATE     : %.50s\n;", tstr);
+    fprintf(apcout, "HOSTNAME : %s\n;", hostname);
+    fprintf(apcout, "UPSNAME  : %.20s\n;", ups->series);
+    fprintf(apcout, "MODEL    : %.20s\n;", ups->battery_type);
+    fprintf(apcout, "FIRMWARE : %.20s\n;", ups->firmware);
+    fprintf(apcout, "STATUS   : ");
+    if (ups->device_status.reg.is_charging)
+    {
+        fprintf(apcout, "ONLINE\n;");
+    }
+    else if (ups->device_status.reg.is_discharging)
+    {
+        fprintf(apcout, "ONBATT\n;");
+    }
+    else
+    {
+        fprintf(apcout, "OFFLINE\n;");
+    }
+    fprintf(apcout, "LINEFAIL : ");
+    if (ups->device_status.reg.is_power_present)
+    {
+        fprintf(apcout, "No\n;");
+    }
+    else
+    {
+        fprintf(apcout, "Yes\n;");
+    }
+    fprintf(apcout, "LINEV    : %.1f Volts\n;", ups->input_voltage / 1000.0);
+    fprintf(apcout, "LINEA    : %.3f Amps\n;", ups->input_current / 1000.0);
+    fprintf(apcout, "OUTPUTV  : %.1f Volts\n;", ups->output_voltage / 1000.0);
+    fprintf(apcout, "OUTPUTA  : %.3f Amps\n;", ups->output_current / 1000.0);
+    fprintf(apcout, "BATTV    : %.1f Volts\n;", ups->battery_voltage / 1000.0);
+    fprintf(apcout, "BATTA    : %.3f Amps\n;", ups->battery_current / 1000.0);
+    fprintf(apcout, "BCHARGE  : %u Percent\n;", ups->soc);
+    fprintf(apcout, "ITEMP    : %d C\n;", ups->uc_temperature);
+    fprintf(apcout, "DSHUTD   : %u Seconds\n;", shutdown_delay);
+    fprintf(apcout, "DWAKE    : %u Seconds\n;", wakeup_delay);
+    fprintf(apcout, "MAXTIME  : %u Seconds\n;", max_backup_time);
+    fprintf(apcout, "RETPCT   : %u Percent\n;", power_return_percent);
+    fprintf(apcout, "STATFLAG : 0x%02X\n;", ups->device_status.value);
+    fprintf(apcout, "REG2     : 0x%04X\n;", ups->charge_status.value);
+    fprintf(apcout, "REG3     : 0x%04X\n;", ups->monitor_status.value);
+    fprintf(apcout, "NOMINV   : %.1f Volts\n;", nominal_input_voltage);
+    fprintf(apcout, "NOMBATTV : %.1f Volts\n;", nominal_battery_voltage);
+    fprintf(apcout, "ENDAPC   : %.50s\n;", tstr);
+    fflush(apcout);           // Update apcstr and apcstr_size
+    long end = ftell(apcout); // Backup end of file
+    rewind(apcout);           // Return to file start
+    // Overwrite file header with current file size
+    fprintf(apcout, "APC      : 001,%03u,%04lu\n", APC_RECORD_COUNT, apcstr_size);
+    fseek(apcout, end, SEEK_SET); // Restore end of file
+    fclose(apcout);               // File content remains until apcstr is freed
+}
+
+/**
  * Bicker UPS read thread.
  */
 static void *ups_read_handler(void *arg)
@@ -312,6 +456,8 @@ static void *ups_read_handler(void *arg)
         lwsl_err("Serial device init failed\n");
         ups_thread_exit = true;
     };
+
+    gethostname(hostname, sizeof hostname);
 
     bool shutdown_pending = false;
     struct timespec ts;
@@ -390,7 +536,7 @@ static void *ups_read_handler(void *arg)
         // Update APC status report
         if (pthread_mutex_trylock(&lock_apc_status) == 0)
         {
-            apc_update_status(bs, &cfg, shutdown_delay);
+            apc_update_status(bs);
             pthread_mutex_unlock(&lock_apc_status);
         }
 
@@ -399,6 +545,10 @@ static void *ups_read_handler(void *arg)
     }
     // Cleanup
     close_serial();
+    if (apcstr != NULL)
+    {
+        free(apcstr);
+    }
     pthread_exit(NULL);
 }
 
@@ -417,7 +567,7 @@ int main(int argc, char **argv)
     info.gid = -1;
     info.uid = -1;
     info.max_http_header_pool = 16;
-    info.options = 0;
+    info.options = LWS_SERVER_OPTION_FALLBACK_TO_RAW;
     info.extensions = NULL;
     info.timeout_secs = 5;
     info.max_http_header_data = 2048;
@@ -455,6 +605,20 @@ int main(int argc, char **argv)
         lwsl_err("Server settings not found in configuration file.\n");
     }
 
+    setting = config_lookup(&cfg, "ups");
+    if (setting != NULL)
+    {
+        config_lookup_float(&cfg, "ups.inputVoltage", &nominal_input_voltage);
+        config_lookup_float(&cfg, "ups.batteryVoltage", &nominal_battery_voltage);
+        config_lookup_int(&cfg, "ups.powerReturnPercent", &power_return_percent);
+        config_lookup_int(&cfg, "ups.maxBackupTime", &max_backup_time);
+        config_lookup_int(&cfg, "ups.wakeupDelay", &wakeup_delay);
+    }
+    else
+    {
+        lwsl_err("UPS settings not found in configuration file.\n");
+    }
+
 #if !defined(LWS_NO_DAEMONIZE)
     if (daemonize)
     {
@@ -483,9 +647,6 @@ int main(int argc, char **argv)
 
     /* Tell the library what debug level to emit and to send it to syslog */
     lws_set_log_level(LLL_ERR | LLL_WARN | LLL_USER, lwsl_emit_syslog);
-
-    info.max_http_header_pool = 16;
-    info.timeout_secs = 5;
 
     /* Create libwebsocket context representing this server */
     context = lws_create_context(&info);

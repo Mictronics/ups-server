@@ -11,7 +11,7 @@ all: ups-server
 %.o: server/%.c server/*.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-ups-server: server/ups-server.o server/bicker.o server/apc.o
+ups-server: server/ups-server.o server/bicker.o
 	$(CC) -g -o server/$@ $^ $(LDFLAGS) $(LIBS)
 
 clean:

@@ -1,5 +1,7 @@
-ups-server (1.0.0) UNRELEASED; urgency=medium
+ups-server (1.0.1) UNRELEASED; urgency=medium
 
-  * Initial release.
+  * Add raw socket with apcupsd compatible output.
+  * Fix bug in getting negative numbers from UPS.
+  * Simplified APC report generation integrated into UPS status thread.
 
- -- Michael Wolf <michael@mictronics.de>  Fri, 03 Nov 2023 14:33:56 +0100
+ -- Michael Wolf <michael@mictronics.de>  Sun, 05 Nov 2023 17:39:14 +0100
