@@ -177,26 +177,20 @@ static ssize_t write_serial(const char *buf, size_t len)
 /**
  * Get integer of variable size.
  */
-static signed long int get_int(const cmd_list_t cmd, const char cmd_index)
+static signed short get_sshort(const cmd_list_t cmd, const char cmd_index)
 {
     if (!has_serial_interface || has_rw_error)
         return 0;
 
     ssize_t len = 0;
-    signed long int i = 0;
+    signed short i = 0;
     bicker_req[2] = cmd_index;
     bicker_req[3] = (char)cmd;
     write_serial(bicker_req, sizeof bicker_req);
     bicker_data_t *p = (bicker_data_t *)read_serial(&len);
     if (p != NULL && len >= 4 && p->soh == BICKER_SOH && p->cmd_list == cmd)
     {
-        if (p->size > sizeof p->data)
-            p->size = sizeof p->data;
-        for (int a = p->size - 4; a > -1; a--)
-        {
-            i <<= 8;
-            i |= (long int)p->data[a] & 0xFF;
-        }
+        i = (signed short)(p->data[1] * 256 + p->data[0]);
     }
     return i;
 }
@@ -227,23 +221,23 @@ static void get_string(cmd_list_t cmd, char *dest, ssize_t buflen)
 
 bicker_ups_status_t *get_ups_status()
 {
-    bicker_ups_status.input_voltage = (signed int)get_int(GET_INPUT_VOLTAGE1, BICKER_CMD_INDEX1);
-    bicker_ups_status.input_current = (signed int)get_int(GET_INPUT_CURRENT1, BICKER_CMD_INDEX1);
-    bicker_ups_status.output_voltage = (signed int)get_int(GET_OUTPUT_VOLTAGE1, BICKER_CMD_INDEX1);
-    bicker_ups_status.output_current = (signed int)get_int(GET_OUTPUT_CURRENT1, BICKER_CMD_INDEX1);
-    bicker_ups_status.battery_current = (signed int)get_int(GET_BATTERY_CURRENT, BICKER_CMD_INDEX1);
-    bicker_ups_status.battery_voltage = (signed int)get_int(GET_BATTERY_VOLTAGE, BICKER_CMD_INDEX1);
-    bicker_ups_status.vcap_voltage.cap1 = (signed int)get_int(GET_VCAP1_VOLTAGE, BICKER_CMD_INDEX3);
-    bicker_ups_status.vcap_voltage.cap2 = (signed int)get_int(GET_VCAP2_VOLTAGE, BICKER_CMD_INDEX3);
-    bicker_ups_status.vcap_voltage.cap3 = (signed int)get_int(GET_VCAP3_VOLTAGE, BICKER_CMD_INDEX3);
-    bicker_ups_status.vcap_voltage.cap4 = (signed int)get_int(GET_VCAP4_VOLTAGE, BICKER_CMD_INDEX3);
-    bicker_ups_status.capacity = (signed int)get_int(GET_CAPACITY, BICKER_CMD_INDEX3);
-    bicker_ups_status.esr = (signed int)get_int(GET_ESR, BICKER_CMD_INDEX3);
-    bicker_ups_status.charge_status.value = (signed int)get_int(GET_CHARGE_STATUS_REGISTER, BICKER_CMD_INDEX3);
-    bicker_ups_status.monitor_status.value = (signed int)get_int(GET_MONITOR_STATUS_REGISTER, BICKER_CMD_INDEX3);
-    bicker_ups_status.device_status.value = (unsigned char)get_int(GET_DEVICE_STATUS, BICKER_CMD_INDEX1);
-    bicker_ups_status.soc = (signed int)get_int(GET_SOC, BICKER_CMD_INDEX1);
-    bicker_ups_status.uc_temperature = (signed int)get_int(GET_UC_TEMPERATURE, BICKER_CMD_INDEX1);
+    bicker_ups_status.input_voltage = (signed int)get_sshort(GET_INPUT_VOLTAGE1, BICKER_CMD_INDEX1);
+    bicker_ups_status.input_current = (signed int)get_sshort(GET_INPUT_CURRENT1, BICKER_CMD_INDEX1);
+    bicker_ups_status.output_voltage = (signed int)get_sshort(GET_OUTPUT_VOLTAGE1, BICKER_CMD_INDEX1);
+    bicker_ups_status.output_current = (signed int)get_sshort(GET_OUTPUT_CURRENT1, BICKER_CMD_INDEX1);
+    bicker_ups_status.battery_current = (signed int)get_sshort(GET_BATTERY_CURRENT, BICKER_CMD_INDEX1);
+    bicker_ups_status.battery_voltage = (signed int)get_sshort(GET_BATTERY_VOLTAGE, BICKER_CMD_INDEX1);
+    bicker_ups_status.vcap_voltage.cap1 = (signed int)get_sshort(GET_VCAP1_VOLTAGE, BICKER_CMD_INDEX3);
+    bicker_ups_status.vcap_voltage.cap2 = (signed int)get_sshort(GET_VCAP2_VOLTAGE, BICKER_CMD_INDEX3);
+    bicker_ups_status.vcap_voltage.cap3 = (signed int)get_sshort(GET_VCAP3_VOLTAGE, BICKER_CMD_INDEX3);
+    bicker_ups_status.vcap_voltage.cap4 = (signed int)get_sshort(GET_VCAP4_VOLTAGE, BICKER_CMD_INDEX3);
+    bicker_ups_status.capacity = (signed int)get_sshort(GET_CAPACITY, BICKER_CMD_INDEX3);
+    bicker_ups_status.esr = (signed int)get_sshort(GET_ESR, BICKER_CMD_INDEX3);
+    bicker_ups_status.charge_status.value = (signed int)get_sshort(GET_CHARGE_STATUS_REGISTER, BICKER_CMD_INDEX3);
+    bicker_ups_status.monitor_status.value = (signed int)get_sshort(GET_MONITOR_STATUS_REGISTER, BICKER_CMD_INDEX3);
+    bicker_ups_status.device_status.value = (unsigned char)get_sshort(GET_DEVICE_STATUS, BICKER_CMD_INDEX1);
+    bicker_ups_status.soc = (signed int)get_sshort(GET_SOC, BICKER_CMD_INDEX1);
+    bicker_ups_status.uc_temperature = (signed int)get_sshort(GET_UC_TEMPERATURE, BICKER_CMD_INDEX1);
     get_string(GET_BATTERY_TYPE, bicker_ups_status.battery_type, sizeof bicker_ups_status.battery_type);
     get_string(GET_FIRMWARE, bicker_ups_status.firmware, sizeof bicker_ups_status.firmware);
     get_string(GET_SERIES, bicker_ups_status.series, sizeof bicker_ups_status.series);
@@ -253,5 +247,5 @@ bicker_ups_status_t *get_ups_status()
 
 void start_cap_esr_measurement()
 {
-    get_int(START_CAP_ESR_MEASUREMENT, BICKER_CMD_INDEX3);
+    get_sshort(START_CAP_ESR_MEASUREMENT, BICKER_CMD_INDEX3);
 }
