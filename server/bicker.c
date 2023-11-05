@@ -175,7 +175,7 @@ static ssize_t write_serial(const char *buf, size_t len)
 }
 
 /**
- * Get integer of variable size.
+ * Get integer of 8 or 16 bit size.
  */
 static signed short get_sshort(const cmd_list_t cmd, const char cmd_index)
 {
@@ -190,7 +190,44 @@ static signed short get_sshort(const cmd_list_t cmd, const char cmd_index)
     bicker_data_t *p = (bicker_data_t *)read_serial(&len);
     if (p != NULL && len >= 4 && p->soh == BICKER_SOH && p->cmd_list == cmd)
     {
-        i = (signed short)(p->data[1] * 256 + p->data[0]);
+        if (p->size == 4)
+        { // int8_t data
+            i = (signed short)p->data[0];
+        }
+        else if (p->size == 5)
+        { // int16_t data
+            i = (signed short)(p->data[1] * 256 + p->data[0]);
+        }
+    }
+    return i;
+}
+
+/**
+ * Get integer of 32 bit size.
+ */
+static signed int get_sint(const cmd_list_t cmd, const char cmd_index)
+{
+    if (!has_serial_interface || has_rw_error)
+        return 0;
+
+    ssize_t len = 0;
+    signed int i = 0;
+    bicker_req[2] = cmd_index;
+    bicker_req[3] = (char)cmd;
+    write_serial(bicker_req, sizeof bicker_req);
+    bicker_data_t *p = (bicker_data_t *)read_serial(&len);
+    if (p != NULL && len >= 4 && p->soh == BICKER_SOH && p->cmd_list == cmd)
+    {
+        if (p->size == 7)
+        {
+            i = p->data[3];
+            i <<= 8;
+            i += p->data[2];
+            i <<= 8;
+            i += p->data[1];
+            i <<= 8;
+            i += p->data[0];
+        }
     }
     return i;
 }
@@ -231,7 +268,7 @@ bicker_ups_status_t *get_ups_status()
     bicker_ups_status.vcap_voltage.cap2 = (signed int)get_sshort(GET_VCAP2_VOLTAGE, BICKER_CMD_INDEX3);
     bicker_ups_status.vcap_voltage.cap3 = (signed int)get_sshort(GET_VCAP3_VOLTAGE, BICKER_CMD_INDEX3);
     bicker_ups_status.vcap_voltage.cap4 = (signed int)get_sshort(GET_VCAP4_VOLTAGE, BICKER_CMD_INDEX3);
-    bicker_ups_status.capacity = (signed int)get_sshort(GET_CAPACITY, BICKER_CMD_INDEX3);
+    bicker_ups_status.capacity = get_sint(GET_CAPACITY, BICKER_CMD_INDEX3);
     bicker_ups_status.esr = (signed int)get_sshort(GET_ESR, BICKER_CMD_INDEX3);
     bicker_ups_status.charge_status.value = (signed int)get_sshort(GET_CHARGE_STATUS_REGISTER, BICKER_CMD_INDEX3);
     bicker_ups_status.monitor_status.value = (signed int)get_sshort(GET_MONITOR_STATUS_REGISTER, BICKER_CMD_INDEX3);
