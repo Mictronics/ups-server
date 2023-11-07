@@ -41,6 +41,7 @@
 #define NOTUSED(V) ((void)V)
 #define WSBUFFERSIZE 1024       // Byte
 #define UPDATE_TIME_USEC 500000 // us = 2 Hz Websocket update
+#define SERVER_CMD_MEASURE 0x1A
 
 static int num_clients = 0;
 static char config_file[PATH_MAX] = "/etc/default/ups-server.cfg";
@@ -57,10 +58,12 @@ static unsigned char *pwsbuffer = wsbuffer;
 static int wsbuffer_len = 0;
 pthread_mutex_t lock_established_conns = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lock_apc_status = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lock_ups_status = PTHREAD_MUTEX_INITIALIZER;
 pthread_t ups_thread;
 pthread_t shutdown_thread;
 static unsigned int shutdown_delay = 1; // Default 1 second if not set in config
 static bool ups_thread_exit = false;
+static bool cmd_cap_esr_measurement = false;
 
 #define APC_RECORD_COUNT 25
 static FILE *apcout;
@@ -133,11 +136,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
  */
 static void handle_client_request(void *in, size_t len)
 {
-    NOTUSED(len);
     unsigned char *id = (unsigned char *)in;
     // We do not expect a command from web client
     switch (*id)
     {
+    case SERVER_CMD_MEASURE:
+        // Stop recording
+        if (len < 1)
+            break;
+        pthread_mutex_lock(&lock_ups_status);
+        cmd_cap_esr_measurement = true;
+        pthread_mutex_unlock(&lock_ups_status);
+        break;
     default:
         break;
     }
@@ -337,6 +347,8 @@ static void sighandler(int sig)
     pthread_mutex_destroy(&lock_established_conns);
     pthread_mutex_unlock(&lock_apc_status);
     pthread_mutex_destroy(&lock_apc_status);
+    pthread_mutex_unlock(&lock_ups_status);
+    pthread_mutex_destroy(&lock_ups_status);
     lws_cancel_service(context);
     lws_context_destroy(context);
     config_destroy(&cfg);
@@ -467,6 +479,7 @@ static void *ups_read_handler(void *arg)
     while (!ups_thread_exit)
     {
         // Get UPS status for websocket service
+        pthread_mutex_lock(&lock_ups_status);
         bicker_ups_status_t *bs = get_ups_status();
         // Check if serial interface connection is still present and there is no R/W error
         if (is_serial_error())
@@ -509,6 +522,14 @@ static void *ups_read_handler(void *arg)
 
         // Cleanup JSON allocated memory
         json_object_put(jroot);
+
+        // Start capacity/ers measurement on request if not running
+        if (cmd_cap_esr_measurement && !bs->monitor_status.reg.is_esr_measuring)
+        {
+            start_cap_esr_measurement();
+            cmd_cap_esr_measurement = false;
+        }
+        pthread_mutex_unlock(&lock_ups_status);
 
         // Check for UPS power fail and shutdown request
         if (bs->device_status.reg.is_power_present == false || bs->device_status.reg.is_shutdown_set == true)

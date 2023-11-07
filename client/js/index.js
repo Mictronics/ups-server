@@ -9,15 +9,17 @@ const serverCommunicationWorker = new Worker('./js/ws.worker.js');
 function UpdateGui(upsStatus) {
   document.getElementById('fieldInputVoltage').value = upsStatus.inputVoltage.toFixed(1);
   document.getElementById('fieldInputCurrent').value = (upsStatus.inputCurrent / 1000).toFixed(3);
+  document.getElementById('fieldInputPower').value = (upsStatus.inputVoltage * (upsStatus.inputCurrent / 1000)).toFixed(1);
   document.getElementById('fieldOutputVoltage').value = upsStatus.outputVoltage.toFixed(1);
   document.getElementById('fieldOutputCurrent').value = (upsStatus.outputCurrent / 1000).toFixed(3);
+  document.getElementById('fieldOutputPower').value = (upsStatus.outputVoltage * (upsStatus.outputCurrent / 1000)).toFixed(1);
   document.getElementById('fieldBatteryVoltage').value = upsStatus.batteryVoltage.toFixed(1);
   document.getElementById('fieldBatteryCurrent').value = (upsStatus.batteryCurrent / 1000).toFixed(3);
   document.getElementById('fieldCell1Voltage').value = upsStatus.vcap1Voltage.toFixed(1);
   document.getElementById('fieldCell2Voltage').value = upsStatus.vcap2Voltage.toFixed(1);
   document.getElementById('fieldCell3Voltage').value = upsStatus.vcap3Voltage.toFixed(1);
   document.getElementById('fieldCell4Voltage').value = upsStatus.vcap4Voltage.toFixed(1);
-  document.getElementById('fieldCapacity').value = upsStatus.capacity;
+  document.getElementById('fieldCapacity').value = (upsStatus.capacity / 1000).toFixed(1);
   document.getElementById('fieldEsr').value = upsStatus.esr;
   document.getElementById('fieldSoc').value = upsStatus.soc;
   document.getElementById('fieldBoardTemperature').value = upsStatus.ucTemperature;
@@ -51,6 +53,15 @@ function UpdateGui(upsStatus) {
   document.getElementById('checkEsrMeasurementFail').checked = upsStatus.monitorStatus & 0x40;
   document.getElementById('checkChargerDisabled').checked = upsStatus.monitorStatus & 0x100;
   document.getElementById('checkChargerEnabled').checked = upsStatus.monitorStatus & 0x200;
+
+  /*
+   * Disable cap/esr measurement start button as long as it is running.
+   */
+  if (upsStatus.monitorStatus & 0x01) {
+    document.getElementById('buttonCapEsr').setAttribute('disabled', true);
+  } else {
+    document.getElementById('buttonCapEsr').removeAttribute('disabled');
+  }
 }
 
 /*
@@ -80,5 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
   serverCommunicationWorker.postMessage({
     cmd: 'connect',
     data: null
+  });
+
+  document.getElementById('buttonCapEsr').addEventListener('click', () => {
+    serverCommunicationWorker.postMessage({
+      cmd: 'capesr',
+      data: null
+    });
   });
 });

@@ -47,6 +47,14 @@ self.onmessage = (e) => {
     case 'connect':
       connect();
       break;
+    case 'capesr':
+      if (socket !== null && socket.readyState === 1) {
+        const buf = new ArrayBuffer(1);
+        const dv = new DataView(buf);
+        dv.setUint8(0, 0x1a);
+        socket.send(buf);
+      }
+      break;
     default:
       console.error(`Unknown command: ${msg.cmd}`);
   }

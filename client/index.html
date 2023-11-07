@@ -2,15 +2,9 @@
 <html lang="en" class="h-100">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui"
-    />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui" />
     <title>UPS Status</title>
-    <meta
-      name="description"
-      content="A websocket client reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS."
-    />
+    <meta name="description" content="A websocket client reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS." />
     <meta name="author" content="Michael Wolf" />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css" />
@@ -79,6 +73,11 @@
           <span class="input-group-text col-sm-1">A</span>
         </div>
         <div class="input-group">
+          <span class="input-group-text col-form-label">Input Power</span>
+          <input id="fieldInputPower" type="text" class="form-control" />
+          <span class="input-group-text col-sm-1">W</span>
+        </div>
+        <div class="input-group">
           <span class="input-group-text col-form-label">Output Voltage</span>
           <input id="fieldOutputVoltage" type="text" class="form-control" />
           <span class="input-group-text col-sm-1">V</span>
@@ -87,6 +86,11 @@
           <span class="input-group-text col-form-label">Output Current</span>
           <input id="fieldOutputCurrent" type="text" class="form-control" />
           <span class="input-group-text col-sm-1">A</span>
+        </div>
+        <div class="input-group">
+          <span class="input-group-text col-form-label">Output Power</span>
+          <input id="fieldOutputPower" type="text" class="form-control" />
+          <span class="input-group-text col-sm-1">W</span>
         </div>
         <div class="input-group">
           <span class="input-group-text col-form-label">Battery Voltage</span>
@@ -309,6 +313,9 @@
             </div>
           </div>
         </div>
+      </div>
+      <div class="m-1">
+        <button id="buttonCapEsr" type="button" class="btn btn-info">Start Cap/ESR Measurement</button>
       </div>
     </div>
     <footer class="fw-lighter fix-bottom float-right">
