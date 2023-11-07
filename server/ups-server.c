@@ -41,7 +41,6 @@
 #define NOTUSED(V) ((void)V)
 #define WSBUFFERSIZE 1024       // Byte
 #define UPDATE_TIME_USEC 500000 // us = 2 Hz Websocket update
-#define SERVER_CMD_MEASURE 0x1A
 
 static int num_clients = 0;
 static char config_file[PATH_MAX] = "/etc/default/ups-server.cfg";
@@ -136,21 +135,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
  */
 static void handle_client_request(void *in, size_t len)
 {
-    unsigned char *id = (unsigned char *)in;
-    // We do not expect a command from web client
-    switch (*id)
+    json_object *jroot = json_tokener_parse(in);
+
+    json_object *jval;
+    json_object_object_get_ex(jroot, "cmd", &jval);
+    const char *p = json_object_get_string(jval);
+    // Start cap/esr measurement
+    if (strcmp(p, "capesr") == 0)
     {
-    case SERVER_CMD_MEASURE:
-        // Stop recording
-        if (len < 1)
-            break;
         pthread_mutex_lock(&lock_ups_status);
         cmd_cap_esr_measurement = true;
         pthread_mutex_unlock(&lock_ups_status);
-        break;
-    default:
-        break;
     }
+    json_object_put(jroot);
 }
 
 /**
