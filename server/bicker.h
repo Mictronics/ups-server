@@ -32,22 +32,53 @@
 
 /**
  * Know commands for UPSIC-1205 + PSZ1063
+ *
+ * See LTC3350 datasheet, page 32.
+ * Command index 3 is a pass-through read of those registers.
  */
 typedef enum
 {
+    GET_CLEAR_ALARMS = 0x00,            // cmd index 0x03
+    GET_MASK_ALARMS = 0x01,             // cmd index 0x03
+    GET_MASK_MONITORING_STATUS = 0x02,  // cmd index 0x03
+    GET_CAP_ESR_PERIOD = 0x04,          // cmd index 0x03
+    GET_VCAP_REF_DAC = 0x05,            // cmd index 0x03
+    GET_VSHUNT = 0x06,                  // cmd index 0x03
+    GET_CAP_UV_ALARM_LEVEL = 0x07,      // cmd index 0x03
+    GET_CAP_OV_ALARM_LEVEL = 0x08,      // cmd index 0x03
+    GET_GPI_UV_ALARM_LEVEL = 0x09,      // cmd index 0x03
+    GET_GPI_OV_ALARM_LEVEL = 0x0A,      // cmd index 0x03
+    GET_VIN_UV_ALARM_LEVEL = 0x0B,      // cmd index 0x03
+    GET_VIN_OV_ALARM_LEVEL = 0x0C,      // cmd index 0x03
+    GET_VCAP_UV_ALARM_LEVEL = 0x0D,     // cmd index 0x03
+    GET_VCAP_OV_ALARM_LEVEL = 0x0E,     // cmd index 0x03
+    GET_VOUT_UV_ALARM_LEVEL = 0x0F,     // cmd index 0x03
+    GET_VOUT_OV_ALARM_LEVEL = 0x10,     // cmd index 0x03
+    GET_INPUT_OC_ALARM_LEVEL = 0x11,    // cmd index 0x03
+    GET_CHARGE_UC_ALARM_LEVEL = 0x12,   // cmd index 0x03
+    GET_DIE_COLD_ALARM_LEVEL = 0x13,    // cmd index 0x03
+    GET_DIE_HOT_ALARM_LEVEL = 0x14,     // cmd index 0x03
+    GET_ESR_HIGH_ALARM_LEVEL = 0x15,    // cmd index 0x03
+    GET_CAP_LOW_ALARM_LEVEL = 0x16,     // cmd index 0x03
+    GET_CAP_UV_ALARM_LEVEL = 0x06,      // cmd index 0x03
+    GET_CONTROL_REG = 0x17,             // cmd index 0x03
+    GET_NUMBER_OF_CAPACITORS = 0x1A,    // cmd index 0x03
     GET_CHARGE_STATUS_REGISTER = 0X1B,  // cmd index 0x03
     GET_MONITOR_STATUS_REGISTER = 0X1C, // cmd index 0x03
+    GET_MONITOR_ALARM_REGISTER = 0X1D,  // cmd index 0x03
     GET_CAPACITY = 0X1E,                // cmd index 0x03
     GET_ESR = 0X1F,                     // cmd index 0x03
+    GET_VCAP1_VOLTAGE = 0x20,           // cmd index 0x03
+    GET_VCAP2_VOLTAGE = 0x21,           // cmd index 0x03
+    GET_VCAP3_VOLTAGE = 0x22,           // cmd index 0x03
+    GET_VCAP4_VOLTAGE = 0x23,           // cmd index 0x03
+    GET_GPI_PIN_VOLTAGE = 0x24,         // cmd index 0x03
     GET_INPUT_VOLTAGE = 0x25,           // cmd index 0x03
     GET_CAP_STACK_VOLTAGE = 0x26,       // cmd index 0x03
     GET_OUTPUT_VOLTAGE = 0x27,          // cmd index 0x03
     GET_INPUT_CURRENT = 0x28,           // cmd index 0x03
     GET_CHARGE_CURRENT = 0x29,          // cmd index 0x03
-    GET_VCAP1_VOLTAGE = 0x20,           // cmd index 0x03
-    GET_VCAP2_VOLTAGE = 0x21,           // cmd index 0x01 + 0x03
-    GET_VCAP3_VOLTAGE = 0x22,           // cmd index 0x03
-    GET_VCAP4_VOLTAGE = 0x23,           // cmd index 0x03
+    GET_CHARGER_TEMPERATURE = 0x2A,     // cmd index 0x03
     START_CAP_ESR_MEASUREMENT = 0x31,   // cmd index 0x03
     GET_DEVICE_STATUS = 0x40,           // cmd index 0x01
     GET_INPUT_VOLTAGE1 = 0x41,          // cmd index 0x01
@@ -63,7 +94,7 @@ typedef enum
     GET_SERIES = 0x62,                  // cmd index 0x01
     GET_FIRMWARE = 0x63,                // cmd index 0x01
     GET_BATTERY_TYPE = 0x64,            // cmd index 0x01
-    GET_UC_TEMPERATURE = 0x66,          // cmd index 0x01
+    GET_LTC3350_TEMPERATURE = 0x66,     // cmd index 0x01
     GET_HARDWARE_REVISION = 0x67,       // cmd index 0x01
 } cmd_list_t;
 
@@ -176,6 +207,35 @@ typedef union
         signed int reserve : 16;
     } reserved;
 } bicker_monitor_status_t;
+
+/**
+ * Alarm register
+ */
+typedef union
+{
+    signed int value;
+    struct
+    {
+        // LSB
+        ALARM_CAP_UV : 1;     // Capacitor under voltage
+        ALARM_CAP_OV : 1;     // Capacitor over voltage
+        ALARM_GPI_UV : 1;     // GPI under voltage
+        ALARM_GPI_OV : 1;     // GPI over voltage
+        ALARM_VIN_UV : 1;     // VIN under voltage
+        ALARM_VIN_OV : 1;     // VIN over voltage
+        ALARM_VCAP_UV : 1;    // VCAP under voltage
+        ALARM_VCAP_OV : 1;    // VCAP over voltage
+        ALARM_VOUT_UV : 1;    // VOUT under voltage
+        ALARM_VOUT_OV : 1;    // VOUT over voltage
+        ALARM_IIN_OC : 1;     // Input over current
+        ALARM_ICHG_UC : 1;    // Charge under current
+        ALARM_DTEMP_COLD : 1; // Die temperature cold
+        ALARM_DTEMP_HOT : 1;  // Die temperature hot
+        ALARM_ESR_HI : 1;     // ESR high
+        ALARM_CAP_LO : 1;     // Capacitance low
+        // MSB
+    } reg;
+}
 
 /**
  * UPS parameter collection

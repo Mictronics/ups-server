@@ -274,7 +274,7 @@ bicker_ups_status_t *get_ups_status()
     bicker_ups_status.monitor_status.value = (signed int)get_sshort(GET_MONITOR_STATUS_REGISTER, BICKER_CMD_INDEX3);
     bicker_ups_status.device_status.value = (unsigned char)get_sshort(GET_DEVICE_STATUS, BICKER_CMD_INDEX1);
     bicker_ups_status.soc = (signed int)get_sshort(GET_SOC, BICKER_CMD_INDEX1);
-    bicker_ups_status.uc_temperature = (signed int)get_sshort(GET_UC_TEMPERATURE, BICKER_CMD_INDEX1);
+    bicker_ups_status.uc_temperature = (signed int)get_sshort(GET_LTC3350_TEMPERATURE, BICKER_CMD_INDEX1);
     get_string(GET_BATTERY_TYPE, bicker_ups_status.battery_type, sizeof bicker_ups_status.battery_type);
     get_string(GET_FIRMWARE, bicker_ups_status.firmware, sizeof bicker_ups_status.firmware);
     get_string(GET_SERIES, bicker_ups_status.series, sizeof bicker_ups_status.series);
