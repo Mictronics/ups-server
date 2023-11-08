@@ -21,7 +21,10 @@
       }
       .col-form-label {
         flex: 0.3 0 auto;
-        width: 10%;
+        width: 6em;
+      }
+      .input-group-text {
+        min-width: 3em;
       }
       .spinner {
         position: fixed;
@@ -30,6 +33,9 @@
         left: 50%;
         width: 5rem;
         height: 5rem;
+      }
+      .checkbox-label {
+        width: 12em;
       }
     </style>
   </head>
@@ -147,37 +153,37 @@
         <div class="card" style="width: fit-content">
           <div class="card-header">Device Status</div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Charging</span>
+            <span class="input-group-text checkbox-label">Charging</span>
             <div class="input-group-text">
               <input id="checkDevCharging" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Discharging</span>
+            <span class="input-group-text checkbox-label">Discharging</span>
             <div class="input-group-text">
               <input id="checkDevDischarging" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Power Present</span>
+            <span class="input-group-text checkbox-label">Power Present</span>
             <div class="input-group-text">
               <input id="checkDevPowerPresent" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Battery Present</span>
+            <span class="input-group-text checkbox-label">Battery Present</span>
             <div class="input-group-text">
               <input id="checkDevBatteryPresent" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Shutdown Set</span>
+            <span class="input-group-text checkbox-label">Shutdown Set</span>
             <div class="input-group-text">
               <input id="checkDevShutdownSet" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Over Current</span>
+            <span class="input-group-text checkbox-label">Over Current</span>
             <div class="input-group-text">
               <input id="checkDevOverCurrent" class="form-check-input mt-0" type="checkbox" />
             </div>
@@ -188,67 +194,67 @@
         <div class="card" style="width: fit-content">
           <div class="card-header">Charging Status</div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Charging</span>
+            <span class="input-group-text checkbox-label">Charging</span>
             <div class="input-group-text">
               <input id="checkCharging" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Backup</span>
+            <span class="input-group-text checkbox-label">Backup</span>
             <div class="input-group-text">
               <input id="checkBackup" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Constant Voltage</span>
+            <span class="input-group-text checkbox-label">Constant Voltage</span>
             <div class="input-group-text">
               <input id="checkConstantVoltage" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Constant Current</span>
+            <span class="input-group-text checkbox-label">Constant Current</span>
             <div class="input-group-text">
               <input id="checkConstantCurrent" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Under Voltage</span>
+            <span class="input-group-text checkbox-label">Under Voltage</span>
             <div class="input-group-text">
               <input id="checkUnderVoltage" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Input Current Limit</span>
+            <span class="input-group-text checkbox-label">Input Current Limit</span>
             <div class="input-group-text">
               <input id="checkInputCurrentLimit" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Capacitor Power Good</span>
+            <span class="input-group-text checkbox-label">Capacitor Power Good</span>
             <div class="input-group-text">
               <input id="checkCapacitorPowerGood" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Capacitor Shunting</span>
+            <span class="input-group-text checkbox-label">Capacitor Shunting</span>
             <div class="input-group-text">
               <input id="checkCapacitorShunting" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Capacitor Balancing</span>
+            <span class="input-group-text checkbox-label">Capacitor Balancing</span>
             <div class="input-group-text">
               <input id="checkCapacitorBalancing" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Charger disabled</span>
+            <span class="input-group-text checkbox-label">Charger disabled</span>
             <div class="input-group-text">
               <input id="checkCharging" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Input power fail</span>
+            <span class="input-group-text checkbox-label">Input power fail</span>
             <div class="input-group-text">
               <input id="checkInputPowerFail" class="form-check-input mt-0" type="checkbox" />
             </div>
@@ -259,55 +265,55 @@
         <div class="card" style="width: fit-content">
           <div class="card-header">Monitoring Status</div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Cap/ESR running</span>
+            <span class="input-group-text checkbox-label">Cap/ESR running</span>
             <div class="input-group-text">
               <input id="checkCapEsrMeasurement" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Cap/ESR time</span>
+            <span class="input-group-text checkbox-label">Cap/ESR time</span>
             <div class="input-group-text">
               <input id="checkCapEsrWaitingTime" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Cap/ESR condition</span>
+            <span class="input-group-text checkbox-label">Cap/ESR condition</span>
             <div class="input-group-text">
               <input id="checkCapEsrWaitingCondition" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Cap complete</span>
+            <span class="input-group-text checkbox-label">Cap complete</span>
             <div class="input-group-text">
               <input id="checkCapMeasurementComplete" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">ESR complete</span>
+            <span class="input-group-text checkbox-label">ESR complete</span>
             <div class="input-group-text">
               <input id="checkEsrMeasurementComplete" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Cap fail</span>
+            <span class="input-group-text checkbox-label">Cap fail</span>
             <div class="input-group-text">
               <input id="checkCapMeasurementFail" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">ESR fail</span>
+            <span class="input-group-text checkbox-label">ESR fail</span>
             <div class="input-group-text">
               <input id="checkEsrMeasurementFail" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Charger disabled</span>
+            <span class="input-group-text checkbox-label">Charger disabled</span>
             <div class="input-group-text">
               <input id="checkChargerDisabled" class="form-check-input mt-0" type="checkbox" />
             </div>
           </div>
           <div class="input-group">
-            <span class="input-group-text col-sm-9">Charger enabled</span>
+            <span class="input-group-text checkbox-label">Charger enabled</span>
             <div class="input-group-text">
               <input id="checkChargerEnabled" class="form-check-input mt-0" type="checkbox" />
             </div>
