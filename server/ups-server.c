@@ -135,8 +135,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
  */
 static void handle_client_request(void *in, size_t len)
 {
+    NOTUSED(len);
     json_object *jroot = json_tokener_parse(in);
-
     json_object *jval;
     json_object_object_get_ex(jroot, "cmd", &jval);
     const char *p = json_object_get_string(jval);

@@ -60,7 +60,6 @@ typedef enum
     GET_DIE_HOT_ALARM_LEVEL = 0x14,     // cmd index 0x03
     GET_ESR_HIGH_ALARM_LEVEL = 0x15,    // cmd index 0x03
     GET_CAP_LOW_ALARM_LEVEL = 0x16,     // cmd index 0x03
-    GET_CAP_UV_ALARM_LEVEL = 0x06,      // cmd index 0x03
     GET_CONTROL_REG = 0x17,             // cmd index 0x03
     GET_NUMBER_OF_CAPACITORS = 0x1A,    // cmd index 0x03
     GET_CHARGE_STATUS_REGISTER = 0X1B,  // cmd index 0x03
@@ -217,25 +216,25 @@ typedef union
     struct
     {
         // LSB
-        ALARM_CAP_UV : 1;     // Capacitor under voltage
-        ALARM_CAP_OV : 1;     // Capacitor over voltage
-        ALARM_GPI_UV : 1;     // GPI under voltage
-        ALARM_GPI_OV : 1;     // GPI over voltage
-        ALARM_VIN_UV : 1;     // VIN under voltage
-        ALARM_VIN_OV : 1;     // VIN over voltage
-        ALARM_VCAP_UV : 1;    // VCAP under voltage
-        ALARM_VCAP_OV : 1;    // VCAP over voltage
-        ALARM_VOUT_UV : 1;    // VOUT under voltage
-        ALARM_VOUT_OV : 1;    // VOUT over voltage
-        ALARM_IIN_OC : 1;     // Input over current
-        ALARM_ICHG_UC : 1;    // Charge under current
-        ALARM_DTEMP_COLD : 1; // Die temperature cold
-        ALARM_DTEMP_HOT : 1;  // Die temperature hot
-        ALARM_ESR_HI : 1;     // ESR high
-        ALARM_CAP_LO : 1;     // Capacitance low
+        bool ALARM_CAP_UV : 1;     // Capacitor under voltage
+        bool ALARM_CAP_OV : 1;     // Capacitor over voltage
+        bool ALARM_GPI_UV : 1;     // GPI under voltage
+        bool ALARM_GPI_OV : 1;     // GPI over voltage
+        bool ALARM_VIN_UV : 1;     // VIN under voltage
+        bool ALARM_VIN_OV : 1;     // VIN over voltage
+        bool ALARM_VCAP_UV : 1;    // VCAP under voltage
+        bool ALARM_VCAP_OV : 1;    // VCAP over voltage
+        bool ALARM_VOUT_UV : 1;    // VOUT under voltage
+        bool ALARM_VOUT_OV : 1;    // VOUT over voltage
+        bool ALARM_IIN_OC : 1;     // Input over current
+        bool ALARM_ICHG_UC : 1;    // Charge under current
+        bool ALARM_DTEMP_COLD : 1; // Die temperature cold
+        bool ALARM_DTEMP_HOT : 1;  // Die temperature hot
+        bool ALARM_ESR_HI : 1;     // ESR high
+        bool ALARM_CAP_LO : 1;     // Capacitance low
         // MSB
     } reg;
-}
+} bicker_alarm_status_t;
 
 /**
  * UPS parameter collection
