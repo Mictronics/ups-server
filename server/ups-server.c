@@ -61,6 +61,10 @@ pthread_mutex_t lock_ups_status = PTHREAD_MUTEX_INITIALIZER;
 pthread_t ups_thread;
 pthread_t shutdown_thread;
 static unsigned int shutdown_delay = 1; // Default 1 second if not set in config
+static int shutdown_soc_percent = 25;   // Default 25% state of charge shutdown
+static bool shutdown_by_time = true;
+static bool shutdown_by_soc = false;
+static bool shutdown_override = false;
 static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
 
@@ -362,7 +366,18 @@ static void *shutdown_handler(void *arg)
     lwsl_warn("Power fail detected, initiating shutdown.");
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    sleep(shutdown_delay); // sleep is a point of cancellation
+    // Wait shutdown time but not when we are low on charge
+    if (shutdown_by_time == true)
+    {
+        if (shutdown_override == false)
+        {
+            sleep(shutdown_delay); // sleep is a point of cancellation
+        }
+        else
+        {
+            lwsl_warn("Immediate low on charge shutdown.");
+        }
+    }
     // Should not get here when cancelled
     lwsl_warn("System shutdown...");
     system("shutdown --poweroff now");
@@ -531,11 +546,20 @@ static void *ups_read_handler(void *arg)
         // Check for UPS power fail and shutdown request
         if (bs->device_status.reg.is_power_present == false || bs->device_status.reg.is_shutdown_set == true)
         {
-            if (shutdown_pending == false)
+            // Proceed if we either shutdown by time or low state of charge
+            if (shutdown_by_time == true || (bs->soc < shutdown_soc_percent && shutdown_by_soc == true))
             {
-                // Initiate shutdown if not pending
-                pthread_create(&shutdown_thread, NULL, shutdown_handler, NULL);
-                shutdown_pending = true;
+                // Override timed shutdown in case we are already low on charge
+                if (bs->soc < shutdown_soc_percent)
+                {
+                    shutdown_override = true;
+                }
+                if (shutdown_pending == false)
+                {
+                    // Initiate shutdown if not pending
+                    pthread_create(&shutdown_thread, NULL, shutdown_handler, NULL);
+                    shutdown_pending = true;
+                }
             }
         }
         // Check if power returned and there is no shutdown request from UPS
@@ -549,6 +573,7 @@ static void *ups_read_handler(void *arg)
                 shutdown_pending = false;
                 lwsl_warn("Power good detected. Shutdown cancelled.");
             }
+            shutdown_override = false;
         }
 
         // Update APC status report
@@ -598,7 +623,7 @@ int main(int argc, char **argv)
     config_init(&cfg);
     if (!config_read_file(&cfg, config_file))
     {
-        lwsl_err("Error reading configuration: %s:%d - %s\n", config_error_file(&cfg),
+        lwsl_err("Error reading configuration: %s:%d - %s", config_error_file(&cfg),
                  config_error_line(&cfg), config_error_text(&cfg));
         config_destroy(&cfg);
         return (EXIT_FAILURE);
@@ -614,13 +639,25 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "server.group", &info.gid);
         config_lookup_bool(&cfg, "server.daemonize", &daemonize);
         config_lookup_int(&cfg, "server.shutdownDelay", (int *)&shutdown_delay);
+        config_lookup_int(&cfg, "server.shutdownSocPercent", (int *)&shutdown_soc_percent);
+        config_lookup_bool(&cfg, "server.shutdownByTime", (int *)&shutdown_by_time);
+        config_lookup_bool(&cfg, "server.shutdownBySoc", (int *)&shutdown_by_soc);
         const char *buf = NULL;
         config_lookup_string(&cfg, "server.serial", &buf);
         set_serial_interface(buf);
+        if (shutdown_soc_percent < 0)
+            shutdown_soc_percent = 25;
+        if (shutdown_soc_percent > 100)
+            shutdown_soc_percent = 100;
+        if (shutdown_by_time == false && shutdown_by_soc == false)
+        {
+            shutdown_by_time = true;
+            lwsl_err("Configuration mismatch. Shutdown by time enabled.");
+        }
     }
     else
     {
-        lwsl_err("Server settings not found in configuration file.\n");
+        lwsl_err("Server settings not found in configuration file.");
     }
 
     setting = config_lookup(&cfg, "ups");
@@ -634,7 +671,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        lwsl_err("UPS settings not found in configuration file.\n");
+        lwsl_err("UPS settings not found in configuration file.");
     }
 
 #if !defined(LWS_NO_DAEMONIZE)
@@ -648,7 +685,7 @@ int main(int argc, char **argv)
      */
     if (daemonize && lws_daemonize("/tmp/.lwsts-lock"))
     {
-        lwsl_err("Failed to daemonize\n");
+        lwsl_err("Failed to daemonize.");
         config_destroy(&cfg);
         return EXIT_FAILURE;
     }
@@ -670,7 +707,7 @@ int main(int argc, char **argv)
     context = lws_create_context(&info);
     if (context == NULL)
     {
-        lwsl_err("libwebsocket init failed\n");
+        lwsl_err("libwebsocket init failed.");
         config_destroy(&cfg);
         return EXIT_FAILURE;
     }
