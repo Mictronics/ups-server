@@ -6,7 +6,7 @@ The server daemon is monitoring the UPS and provides its parameters to a web app
 
 Tested with Bicker UPSIC-1205 + PSZ1063. See [www.bicker.de](https://www.bicker.de)
 
-The above hardware combination is powering a Nipogi mini PC that via 12V supply. This mini PC is running Ubuntu Server and the UPS monitoring ensures a clean shutdown in case of input power fail.
+The above hardware combination is powering a Nipogi mini PC via 12V supply. This mini PC is running Ubuntu Server and the UPS monitoring ensures a clean shutdown in case of input power fail.
 
 There are two protocols implemented on the port that is provided by the UPS server: a Websocket where the web application connects to and a RAW protocol that is serving a apcupsd compatible output for tools like apcaccess or Netdata's apcupsd plugin.
 
