@@ -81,6 +81,29 @@ static int wakeup_delay = 0;
 static char hostname[256];
 
 /**
+ * HTTP protocol and server mount.
+ */
+static const struct lws_http_mount mount = {
+    .mount_next = NULL,
+    .mountpoint = "/",
+    .origin = "./client",
+    .def = "index.html",
+    .protocol = NULL,
+    .cgienv = NULL,
+    .extra_mimetypes = NULL,
+    .interpret = NULL,
+    .cgi_timeout = 0,
+    .cache_max_age = 0,
+    .auth_mask = 0,
+    .cache_reusable = 0,
+    .cache_revalidate = 0,
+    .cache_intermediaries = 0,
+    .origin_protocol = LWSMPRO_FILE,
+    .mountpoint_len = 1,
+    .basic_auth_login_file = NULL,
+};
+
+/**
  * One of these is created for each client connecting.
  */
 struct ws_pss
@@ -103,6 +126,8 @@ struct ws_vhd
     char buf[100];
 };
 
+static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+                         void *user, void *in, size_t len);
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
@@ -158,12 +183,106 @@ static void handle_client_request(void *in, size_t len)
  * Websocket protocol definition.
  */
 static struct lws_protocols protocols[] = {
-    {"raw", callback_broadcast, sizeof(struct ws_pss), 0, 0, NULL, 0},
+    {"http", callback_http, 0, 0, 0, NULL, 0},
     {"broadcast", callback_broadcast, sizeof(struct ws_pss), WSBUFFERSIZE, 0, NULL, 0},
-    {"http", lws_callback_http_dummy, 0, 0, 0, NULL, 0},
     {NULL, NULL, 0, 0, 0, NULL, 0} /* terminator */
 };
 
+/**
+ * Callback that is serving the APC status report with the raw fallback protocol.
+*/
+static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+{
+    struct ws_vhd *vhd = (struct ws_vhd *)lws_protocol_vh_priv_get(lws_get_vhost(wsi), lws_get_protocol(wsi));
+    switch (reason)
+    {
+    case LWS_CALLBACK_PROTOCOL_INIT:
+        vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
+                                          lws_get_protocol(wsi),
+                                          sizeof(struct ws_vhd));
+        vhd->context = lws_get_context(wsi);
+        vhd->protocol = lws_get_protocol(wsi);
+        vhd->vhost = lws_get_vhost(wsi);
+        break;
+    /*
+     * RAW protocol handler for APC status report
+     */
+    case LWS_CALLBACK_RAW_ADOPT:
+        lwsl_notice("Connecting raw socket.");
+        break;
+
+    case LWS_CALLBACK_RAW_CLOSE:
+        pthread_mutex_unlock(&lock_apc_status);
+        lwsl_notice("Closing raw socket.");
+        break;
+
+    case LWS_CALLBACK_RAW_RX:
+        // React only on apcaccess status request
+        if (len != 8 || memcmp(in, "\x00\x06status", 8) != 0)
+        {
+            return -1;
+        }
+        // Prevent APC status report update as long as transmission is in progress.
+        pthread_mutex_lock(&lock_apc_status);
+        // NIS protocol requires line by line transfer.
+        apcline = strtok(apcstr, ";");
+        if (apcline != NULL)
+        {
+            // NIS protocol first two bytes (uint16_t) are the length of the following line.
+            vhd->len = strlen(apcline);
+            vhd->buf[0] = 0;
+            vhd->buf[1] = vhd->len; // Set line length
+            // Copy line content
+            memcpy(&vhd->buf[2], apcline, vhd->len);
+            vhd->len += 2; // uint16_t + line length
+        }
+        // Request first transmission callback
+        lws_callback_on_writable(wsi);
+        break;
+
+    case LWS_CALLBACK_RAW_WRITEABLE:
+        // Send APC status report line
+        if (lws_write(wsi, (unsigned char *)vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) != vhd->len)
+        {
+            lwsl_err("Error writing raw socket.");
+            return 1;
+        }
+        // Get next APC report line
+        apcline = strtok(NULL, ";");
+        if (apcline != NULL)
+        {
+            // See above.
+            vhd->len = strlen(apcline);
+            vhd->buf[0] = 0;
+            vhd->buf[1] = vhd->len;
+            memcpy(&vhd->buf[2], apcline, vhd->len);
+            vhd->len += 2;
+            // Request next transmission callback
+            lws_callback_on_writable(wsi);
+        }
+        else
+        {
+            // No more lines in APC status report. Send zero length to close connection.
+            vhd->buf[0] = 0;
+            vhd->buf[1] = 0;
+            vhd->len = 2;
+            // Request next transmission callback
+            lws_callback_on_writable(wsi);
+            // Close connection server side
+            return -1;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return lws_callback_http_dummy(wsi, reason, user, in, len);
+}
+
+/**
+ * Callback that is serving the web socket protocol.
+*/
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len)
 {
@@ -174,7 +293,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
         if (num_clients > 10)
         {
-            lwsl_warn("10 clients already connected. New connection rejected...\n");
+            lwsl_warn("10 clients already connected. New connection rejected...");
             return -1;
         }
         break;
@@ -192,7 +311,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
 
     case LWS_CALLBACK_ESTABLISHED:
         ++num_clients;
-        lwsl_notice("Client connected.\n");
+        lwsl_notice("Client connected.");
         pss->wsi = wsi;
         if (lws_hdr_copy(wsi, vhd->buf, sizeof(vhd->buf), WSI_TOKEN_GET_URI) > 0)
             pss->publishing = !strcmp(vhd->buf, "/publisher");
@@ -204,7 +323,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
     case LWS_CALLBACK_CLOSED:
     case LWS_CALLBACK_WSI_DESTROY:
         --num_clients;
-        lwsl_notice("Client disconnected.\n");
+        lwsl_notice("Client disconnected.");
         /* remove our closing pss from the list of live pss */
         lws_ll_fwd_remove(struct ws_pss, pss_list,
                           pss, vhd->pss_list);
@@ -217,7 +336,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
         vhd->len = lws_write(wsi, &pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], wsbuffer_len, LWS_WRITE_TEXT);
         if (vhd->len < (int)wsbuffer_len)
         {
-            lwsl_err("Error writing to websocket\n");
+            lwsl_err("Error writing to websocket");
             return -1;
         }
         break;
@@ -247,81 +366,6 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
         {
             if (!(*ppss)->publishing)
                 lws_callback_on_writable((*ppss)->wsi);
-        }
-        lws_end_foreach_llp(ppss, pss_list);
-        break;
-
-    /*
-     * RAW protocol handler for APC status report
-     */
-    case LWS_CALLBACK_RAW_ADOPT:
-        pss->wsi = wsi;
-        lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
-        break;
-
-    case LWS_CALLBACK_RAW_CLOSE:
-        lws_ll_fwd_remove(struct ws_pss, pss_list, pss, vhd->pss_list);
-        // Complete status report sent. Release lock allowing update.
-        pthread_mutex_unlock(&lock_apc_status);
-        break;
-
-    case LWS_CALLBACK_RAW_RX:
-        // React only on apcaccess status request
-        if (len == 8 && memcmp(in, "\x00\x06status", 8) != 0)
-        {
-            return 0;
-        }
-        // Prevent APC status report update as long as transmission is in progress.
-        pthread_mutex_lock(&lock_apc_status);
-        // NIS protocol requires line by line transfer.
-        apcline = strtok(apcstr, ";");
-        if (apcline != NULL)
-        {
-            // NIS protocol first two bytes (uint16_t) are the length of the following line.
-            vhd->len = strlen(apcline);
-            vhd->buf[0] = 0;
-            vhd->buf[1] = vhd->len; // Set line length
-            // Copy line content
-            memcpy(&vhd->buf[2], apcline, vhd->len);
-            vhd->len += 2; // uint16_t + line length
-        }
-        // Request first transmission callback
-        lws_start_foreach_llp(struct ws_pss **, ppss, vhd->pss_list)
-        {
-            lws_callback_on_writable((*ppss)->wsi);
-        }
-        lws_end_foreach_llp(ppss, pss_list);
-        break;
-
-    case LWS_CALLBACK_RAW_WRITEABLE:
-        // Send APC status report line
-        if (lws_write(wsi, (unsigned char *)vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) != vhd->len)
-        {
-            lwsl_err("Error writing raw socket.\n");
-            return 1;
-        }
-        // Get next APC report line
-        apcline = strtok(NULL, ";");
-        if (apcline != NULL)
-        {
-            // See above.
-            vhd->len = strlen(apcline);
-            vhd->buf[0] = 0;
-            vhd->buf[1] = vhd->len;
-            memcpy(&vhd->buf[2], apcline, vhd->len);
-            vhd->len += 2;
-        }
-        else
-        {
-            // No more lines in APC status report. Send zero length to close connection.
-            vhd->buf[0] = 0;
-            vhd->buf[1] = 0;
-            vhd->len = 2;
-        }
-        // Request next transmission callback
-        lws_start_foreach_llp(struct ws_pss **, ppss, vhd->pss_list)
-        {
-            lws_callback_on_writable((*ppss)->wsi);
         }
         lws_end_foreach_llp(ppss, pss_list);
         break;
@@ -611,9 +655,11 @@ int main(int argc, char **argv)
     info.uid = -1;
     info.max_http_header_pool = 16;
     info.options = LWS_SERVER_OPTION_FALLBACK_TO_RAW;
+    info.mounts = &mount;
     info.extensions = NULL;
     info.timeout_secs = 5;
     info.max_http_header_data = 2048;
+    info.vhost_name = "localhost";
     /* Parse the command line options */
     if (argp_parse(&argp, argc, argv, 0, 0, 0))
     {

@@ -60,7 +60,7 @@ Nothing special, just build it `dpkg-buildpackage -b -uc`.
 
 Install package `sudo dpkg -i ups-server_1.0.0~dev_amd64.deb`.
 
-The package installation is not including a webserver and its configuration. The ups-server binary is installed in `/opt/ups-server` while the web client is in `/opt/www/ups-server`.
+The ups-server binary is installed in `/opt/ups-server` while the web client is in `/opt/ups-server/client`.
 
 ### Removal
 
@@ -69,6 +69,12 @@ Remove the package `sudo apt-get purge ups-server`.
 ### Configuration
 
 To configure the service in `/etc/default/ups-server.cfg` as required.
+
+### Access
+
+Web application in browser `http://localhost:10024`
+
+APC status `/usr/sbin/apcaccess status localhost:10024`
 
 ## Building manually
 

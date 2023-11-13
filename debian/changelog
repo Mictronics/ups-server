@@ -1,7 +1,8 @@
-ups-server (1.0.1) UNRELEASED; urgency=medium
+ups-server (1.0.2) UNRELEASED; urgency=medium
 
   * Add raw socket with apcupsd compatible output.
   * Fix bug in getting negative numbers from UPS.
   * Simplified APC report generation integrated into UPS status thread.
+  * Serve web application files by libwebsockets server. No external web server required.
 
- -- Michael Wolf <michael@mictronics.de>  Sun, 05 Nov 2023 17:39:14 +0100
+ -- Michael Wolf <michael@mictronics.de>  Mon, 13 Nov 2023 19:57:04 +0100
