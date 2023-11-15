@@ -29,10 +29,10 @@ function UpdateGui(upsStatus) {
   document.getElementById('checkDevBatteryPresent').checked = upsStatus.deviceStatus & 0x08;
   document.getElementById('checkDevShutdownSet').checked = upsStatus.deviceStatus & 0x10;
   document.getElementById('checkDevOverCurrent').checked = upsStatus.deviceStatus & 0x20;
-  document.getElementById('fieldSeries').value = upsStatus.series;
-  document.getElementById('fieldType').value = upsStatus.batteryType;
-  document.getElementById('fieldHardware').value = upsStatus.hwRevision;
-  document.getElementById('fieldFirmware').value = upsStatus.firmware;
+  document.getElementById('fieldSeries').innerText = upsStatus.series;
+  document.getElementById('fieldType').innerText = upsStatus.batteryType;
+  document.getElementById('fieldHardware').innerText = upsStatus.hwRevision;
+  document.getElementById('fieldFirmware').innerText = upsStatus.firmware;
   document.getElementById('checkCharging').checked = upsStatus.chargeStatus & 0x01;
   document.getElementById('checkBackup').checked = upsStatus.chargeStatus & 0x02;
   document.getElementById('checkConstantVoltage').checked = upsStatus.chargeStatus & 0x04;
