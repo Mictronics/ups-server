@@ -69,7 +69,7 @@ static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
 static bool was_power_present = false;
 
-#define APC_RECORD_COUNT 25
+#define APC_RECORD_COUNT 26
 static FILE *apcout;
 static size_t apcstr_size = 0;
 static char *apcstr = NULL;
@@ -79,6 +79,7 @@ static double nominal_battery_voltage = 0.0;
 static int power_return_percent = 0;
 static int max_backup_time = 0;
 static int wakeup_delay = 0;
+static int max_amps = 0;
 static char hostname[256];
 
 /**
@@ -490,6 +491,7 @@ static void apc_update_status(bicker_ups_status_t *ups)
     fprintf(apcout, "LINEA    : %.3f Amps\n;", ups->input_current / 1000.0);
     fprintf(apcout, "OUTPUTV  : %.1f Volts\n;", ups->output_voltage / 1000.0);
     fprintf(apcout, "OUTPUTA  : %.3f Amps\n;", ups->output_current / 1000.0);
+    fprintf(apcout, "LOADPCT  : %u Percent\n;", (int)(((double)ups->output_current / (double)max_amps) * 100.0));
     fprintf(apcout, "BATTV    : %.1f Volts\n;", ups->battery_voltage / 1000.0);
     fprintf(apcout, "BATTA    : %.3f Amps\n;", ups->battery_current / 1000.0);
     fprintf(apcout, "BCHARGE  : %u Percent\n;", ups->soc);
@@ -558,6 +560,7 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "inputCurrent", json_object_new_int((int)bs->input_current));
         json_object_object_add(jroot, "outputCurrent", json_object_new_int((int)bs->output_current));
         json_object_object_add(jroot, "batteryCurrent", json_object_new_int((int)bs->battery_current));
+        json_object_object_add(jroot, "outputLoad", json_object_new_int((int)(((double)bs->output_current / (double)max_amps) * 100.0)));
         json_object_object_add(jroot, "ucTemperature", json_object_new_int((int)bs->uc_temperature));
         json_object_object_add(jroot, "capacity", json_object_new_int((int)bs->capacity));
         json_object_object_add(jroot, "esr", json_object_new_int((int)bs->esr));
@@ -729,10 +732,21 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "ups.powerReturnPercent", &power_return_percent);
         config_lookup_int(&cfg, "ups.maxBackupTime", &max_backup_time);
         config_lookup_int(&cfg, "ups.wakeupDelay", &wakeup_delay);
+        config_lookup_int(&cfg, "ups.maxAmps", &max_amps);
     }
     else
     {
         lwsl_err("UPS settings not found in configuration file.");
+    }
+
+    if (max_amps < 1)
+    {
+        max_amps = 5000;
+        lwsl_warn("UPS maximum current rating not found. Set to 5 amps.");
+    }
+    else
+    {
+        max_amps *= 1000;
     }
 
 #if !defined(LWS_NO_DAEMONIZE)
