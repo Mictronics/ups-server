@@ -133,7 +133,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
-const char *argp_program_version = "UPS Server v1.0.1";
+const char *argp_program_version = "UPS Server v1.0.3";
 const char args_doc[] = "";
 const char doc[] = "Websocket Server for Bicker PSZ-1063 uExtension module\nLicense GPL-3+\n(C) 2023 Michael Wolf\n"
                    "A websocket server reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS";
