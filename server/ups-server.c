@@ -67,6 +67,7 @@ static bool shutdown_by_soc = false;
 static bool shutdown_override = false;
 static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
+static bool was_power_present = false;
 
 #define APC_RECORD_COUNT 25
 static FILE *apcout;
@@ -190,7 +191,7 @@ static struct lws_protocols protocols[] = {
 
 /**
  * Callback that is serving the APC status report with the raw fallback protocol.
-*/
+ */
 static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     struct ws_vhd *vhd = (struct ws_vhd *)lws_protocol_vh_priv_get(lws_get_vhost(wsi), lws_get_protocol(wsi));
@@ -282,7 +283,7 @@ static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void
 
 /**
  * Callback that is serving the web socket protocol.
-*/
+ */
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len)
 {
@@ -407,7 +408,7 @@ static void sighandler(int sig)
 static void *shutdown_handler(void *arg)
 {
     NOTUSED(arg);
-    lwsl_warn("Power fail detected, initiating shutdown.");
+    lwsl_warn("Initiating shutdown.");
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     // Wait shutdown time but not when we are low on charge
@@ -590,6 +591,13 @@ static void *ups_read_handler(void *arg)
         // Check for UPS power fail and shutdown request
         if (bs->device_status.reg.is_power_present == false || bs->device_status.reg.is_shutdown_set == true)
         {
+            // Raise warning independent of shutdown mode.
+            if (was_power_present == true)
+            {
+                lwsl_warn("Power fail detected!");
+                was_power_present = false;
+            }
+
             // Proceed if we either shutdown by time or low state of charge
             if (shutdown_by_time == true || (bs->soc < shutdown_soc_percent && shutdown_by_soc == true))
             {
@@ -609,13 +617,20 @@ static void *ups_read_handler(void *arg)
         // Check if power returned and there is no shutdown request from UPS
         if (bs->device_status.reg.is_power_present == true && bs->device_status.reg.is_shutdown_set == false)
         {
+            // Raise warning independent of shutdown mode.
+            if (was_power_present == false)
+            {
+                lwsl_warn("Power good detected.");
+                was_power_present = true;
+            }
+
             if (shutdown_pending == true)
             {
                 // Cancel a pending shutdown
                 pthread_cancel(shutdown_thread);
                 pthread_join(shutdown_thread, NULL);
                 shutdown_pending = false;
-                lwsl_warn("Power good detected. Shutdown cancelled.");
+                lwsl_warn("Shutdown cancelled.");
             }
             shutdown_override = false;
         }
