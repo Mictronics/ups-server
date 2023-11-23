@@ -67,7 +67,6 @@ static bool shutdown_by_soc = false;
 static bool shutdown_override = false;
 static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
-static bool was_power_present = false;
 
 #define APC_RECORD_COUNT 26
 static FILE *apcout;
@@ -530,6 +529,7 @@ static void *ups_read_handler(void *arg)
 
     gethostname(hostname, sizeof hostname);
 
+    bool was_power_present = false;
     bool shutdown_pending = false;
     struct timespec ts;
     ts.tv_sec = UPDATE_TIME_USEC / 1000000;
