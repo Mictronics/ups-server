@@ -15,8 +15,8 @@ Restart=always
 RestartSec=30
 Nice=0
 SyslogIdentifier=BickerUPS
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=autodeploy
 
 [Install]
