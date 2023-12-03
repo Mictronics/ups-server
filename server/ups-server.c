@@ -67,6 +67,7 @@ static bool shutdown_by_soc = false;
 static bool shutdown_override = false;
 static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
+static bool log_file_enable = false;
 
 #define APC_RECORD_COUNT 26
 static FILE *apcout;
@@ -514,6 +515,56 @@ static void apc_update_status(bicker_ups_status_t *ups)
     fclose(apcout);               // File content remains until apcstr is freed
 }
 
+static void log_to_file(bicker_ups_status_t *ups)
+{
+    char path[FILENAME_MAX];
+    struct stat st = {0};
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    FILE *fp;
+    bool exists = true;
+
+    // Create file by flight and top number
+    snprintf(path, FILENAME_MAX, "/var/tmp/ups-server_%02u%02u%04u.csv",
+             t->tm_mday,
+             t->tm_mon + 1,
+             1900 + t->tm_year);
+    if (stat(path, &st) == -1)
+    {
+        exists = false;
+    }
+    fp = fopen(path, "a");
+    if (fp != NULL)
+    {
+        if (exists == false)
+        { // Add header
+            fputs("TIME;IN_V;IN_A;IN_W;OUT_V;OUT_A;OUT_W;LOAD;BATT_V;BATT_A;SOC;VCAP1;VCAP2;VCAP3;VCAP4;TEMP\n", fp);
+        }
+        fprintf(fp, "%lu;%0.1f;%0.3f;%0.1f;%0.1f;%0.3f;%0.1f;%u;%0.1f;%0.3f;%u;%0.1f;%0.1f;%0.1f;%0.1f;%u\n",
+                now,
+                ups->input_voltage / 1000.0,
+                ups->input_current / 1000.0,
+                (ups->input_voltage / 1000.0) * (ups->input_current / 1000.0),
+                ups->output_voltage / 1000.0,
+                ups->output_current / 1000.0,
+                (ups->output_voltage / 1000.0) * (ups->output_current / 1000.0),
+                (int)(((double)ups->output_current / (double)max_amps) * 100.0),
+                ups->battery_voltage / 1000.0,
+                ups->battery_current / 1000.0,
+                ups->soc,
+                ups->vcap_voltage.cap1 / 1000.0,
+                ups->vcap_voltage.cap2 / 1000.0,
+                ups->vcap_voltage.cap3 / 1000.0,
+                ups->vcap_voltage.cap4 / 1000.0,
+                ups->uc_temperature);
+    }
+    else
+    {
+        lwsl_err("Error creating log file: %s\n", strerror(errno));
+    }
+    fclose(fp);
+}
+
 /**
  * Bicker UPS read thread.
  */
@@ -645,6 +696,11 @@ static void *ups_read_handler(void *arg)
             pthread_mutex_unlock(&lock_apc_status);
         }
 
+        if (log_file_enable)
+        {
+            log_to_file(bs);
+        }
+
         // Websocket update delay
         nanosleep(&ts, NULL);
     }
@@ -702,6 +758,7 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "server.user", &info.uid);
         config_lookup_int(&cfg, "server.group", &info.gid);
         config_lookup_bool(&cfg, "server.daemonize", &daemonize);
+        config_lookup_bool(&cfg, "server.logToFile", (int *)&log_file_enable);
         config_lookup_int(&cfg, "server.shutdownDelay", (int *)&shutdown_delay);
         config_lookup_int(&cfg, "server.shutdownSocPercent", (int *)&shutdown_soc_percent);
         config_lookup_bool(&cfg, "server.shutdownByTime", (int *)&shutdown_by_time);
