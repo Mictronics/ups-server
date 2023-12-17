@@ -8,7 +8,7 @@ After=network.target
 After=sockets.target
 
 [Service]
-User=bicker
+User=ups
 ExecStart=/opt/ups-server/ups-server
 Type=simple
 Restart=always
