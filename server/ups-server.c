@@ -88,7 +88,7 @@ static char hostname[256];
 static const struct lws_http_mount mount = {
     .mount_next = NULL,
     .mountpoint = "/",
-    .origin = "./client",
+    .origin = "/opt/ups-server/client",
     .def = "index.html",
     .protocol = NULL,
     .cgienv = NULL,
@@ -733,7 +733,7 @@ int main(int argc, char **argv)
     info.extensions = NULL;
     info.timeout_secs = 5;
     info.max_http_header_data = 2048;
-    info.vhost_name = "localhost";
+    info.vhost_name = "abakan.fitz.box";
     /* Parse the command line options */
     if (argp_parse(&argp, argc, argv, 0, 0, 0))
     {
