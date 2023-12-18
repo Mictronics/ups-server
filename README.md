@@ -70,6 +70,18 @@ Remove the package `sudo apt-get purge ups-server`.
 
 To configure the service in `/etc/default/ups-server.cfg` as required.
 
+#### Netdata apcupsd configuration
+
+Edit the netdata apcupsd configuration with `sudo ./edit-config charts.d/apcupsd.conf`. Change the source IP and port to what is set in `/etc/default/ups-server.cfg`.
+
+```bash
+# add all your APC UPSes in this array - uncomment it too
+declare -A apcupsd_sources=(
+    ["local"]="127.0.0.1:10024"
+)
+```
+Restart netdata service.
+
 ### Access
 
 Web application in browser `http://localhost:10024`
