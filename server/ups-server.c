@@ -129,8 +129,8 @@ struct ws_vhd
     char buf[100];
 };
 
-static int callback_http(struct lws *wsi, enum lws_callback_reasons reason,
-                         void *user, void *in, size_t len);
+static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason,
+                        void *user, void *in, size_t len);
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
@@ -186,7 +186,7 @@ static void handle_client_request(void *in, size_t len)
  * Websocket protocol definition.
  */
 static struct lws_protocols protocols[] = {
-    {"http", callback_http, 0, 0, 0, NULL, 0},
+    {"http", callback_raw, 0, 0, 0, NULL, 0},
     {"broadcast", callback_broadcast, sizeof(struct ws_pss), WSBUFFERSIZE, 0, NULL, 0},
     {NULL, NULL, 0, 0, 0, NULL, 0} /* terminator */
 };
@@ -194,7 +194,7 @@ static struct lws_protocols protocols[] = {
 /**
  * Callback that is serving the APC status report with the raw fallback protocol.
  */
-static int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
+static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len)
 {
     struct ws_vhd *vhd = (struct ws_vhd *)lws_protocol_vh_priv_get(lws_get_vhost(wsi), lws_get_protocol(wsi));
     switch (reason)
