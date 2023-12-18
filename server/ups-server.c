@@ -126,6 +126,7 @@ struct ws_vhd
     struct ws_pss *pss_list; // linked-list of live pss
     int len;
     char buf[100];
+    char *p_apcstr;
 };
 
 static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason,
@@ -226,8 +227,12 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
         }
         // Prevent APC status report update as long as transmission is in progress.
         pthread_mutex_lock(&lock_apc_status);
+        // Create temporary copy of status string since strtok is modifing the source one.
+        // Otherwise consecutive apcaccess request will read only first line of report between updates.
+        vhd->p_apcstr = malloc(apcstr_size);
+        memcpy(vhd->p_apcstr, apcstr, apcstr_size);
         // NIS protocol requires line by line transfer.
-        apcline = strtok(apcstr, ";");
+        apcline = strtok(vhd->p_apcstr, ";");
         if (apcline != NULL)
         {
             // NIS protocol first two bytes (uint16_t) are the length of the following line.
@@ -270,6 +275,8 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
             vhd->len = 2;
             // Request next transmission callback
             lws_callback_on_writable(wsi);
+            // Remove temporary apcstr copy when sent.
+            free(vhd->p_apcstr);
             // Close connection server side
             return -1;
         }
