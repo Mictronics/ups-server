@@ -39,8 +39,8 @@
 #include "bicker.h"
 
 #define NOTUSED(V) ((void)V)
-#define WSBUFFERSIZE 1024       // Byte
-#define UPDATE_TIME_USEC 500000 // us = 2 Hz Websocket update
+#define WSBUFFERSIZE 1024 // Byte
+#define UPDATE_TIME_SEC 1 // seconds, Websocket update
 
 static int num_clients = 0;
 static char config_file[PATH_MAX] = "/etc/default/ups-server.cfg";
@@ -592,9 +592,6 @@ static void *ups_read_handler(void *arg)
 
     bool was_power_present = false;
     bool shutdown_pending = false;
-    struct timespec ts;
-    ts.tv_sec = UPDATE_TIME_USEC / 1000000;
-    ts.tv_nsec = ((UPDATE_TIME_USEC / 1000) % 1000) * 1000000;
 
     while (!ups_thread_exit)
     {
@@ -712,7 +709,7 @@ static void *ups_read_handler(void *arg)
         }
 
         // Websocket update delay
-        nanosleep(&ts, NULL);
+        sleep(UPDATE_TIME_SEC);
     }
     // Cleanup
     close_serial();
