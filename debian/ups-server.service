@@ -14,7 +14,6 @@ Type=simple
 Restart=always
 RestartSec=30
 Nice=0
-SyslogIdentifier=BickerUPS
 StandardOutput=journal
 StandardError=journal
 
