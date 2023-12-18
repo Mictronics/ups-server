@@ -69,13 +69,14 @@ static bool ups_thread_exit = false;
 static bool cmd_cap_esr_measurement = false;
 static bool log_file_enable = false;
 
-#define APC_RECORD_COUNT 26
+#define APC_RECORD_COUNT 29
 static FILE *apcout;
 static size_t apcstr_size = 0;
 static char *apcstr = NULL;
 static char *apcline = NULL;
 static double nominal_input_voltage = 0.0;
 static double nominal_battery_voltage = 0.0;
+static int nominal_ouput_power = 0;
 static int power_return_percent = 0;
 static int max_backup_time = 0;
 static int wakeup_delay = 0;
@@ -465,6 +466,8 @@ static void apc_update_status(bicker_ups_status_t *ups)
     fprintf(apcout, "UPSNAME  : %.20s\n;", ups->series);
     fprintf(apcout, "MODEL    : %.20s\n;", ups->battery_type);
     fprintf(apcout, "FIRMWARE : %.20s\n;", ups->firmware);
+    fprintf(apcout, "CABLE    : Ethernet Link\n;");
+    fprintf(apcout, "DRIVER   : NETWORKS UPS Driver\n;");
     fprintf(apcout, "STATUS   : ");
     if (ups->device_status.reg.is_charging)
     {
@@ -505,12 +508,13 @@ static void apc_update_status(bicker_ups_status_t *ups)
     fprintf(apcout, "REG3     : 0x%04X\n;", ups->monitor_status.value);
     fprintf(apcout, "NOMINV   : %.1f Volts\n;", nominal_input_voltage);
     fprintf(apcout, "NOMBATTV : %.1f Volts\n;", nominal_battery_voltage);
+    fprintf(apcout, "NOMPOWER : %u Watts\n;", nominal_ouput_power);
     fprintf(apcout, "ENDAPC   : %.50s\n;", tstr);
     fflush(apcout);           // Update apcstr and apcstr_size
     long end = ftell(apcout); // Backup end of file
     rewind(apcout);           // Return to file start
     // Overwrite file header with current file size
-    fprintf(apcout, "APC      : 001,%03u,%04lu\n", APC_RECORD_COUNT, apcstr_size);
+    fprintf(apcout, "APC      : 001,%03u,%04lu\n;", APC_RECORD_COUNT, apcstr_size);
     fseek(apcout, end, SEEK_SET); // Restore end of file
     fclose(apcout);               // File content remains until apcstr is freed
 }
@@ -790,6 +794,7 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "ups.maxBackupTime", &max_backup_time);
         config_lookup_int(&cfg, "ups.wakeupDelay", &wakeup_delay);
         config_lookup_int(&cfg, "ups.maxAmps", &max_amps);
+        nominal_ouput_power = nominal_input_voltage * max_amps;
     }
     else
     {
