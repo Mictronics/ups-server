@@ -72,6 +72,8 @@ To configure the service in `/etc/default/ups-server.cfg` as required.
 
 #### Netdata apcupsd configuration
 
+The tool `apcaccess` from the apcupsd package is required to get the UPS metrics in netdata. Temporary install the package, copy apcaccess tool to a different location `sudo cp /usr/sbin/apcaccess /usr/local/sbin/apcaccess` and then purge the apcupsd package.
+
 Edit the netdata apcupsd configuration with `sudo ./edit-config charts.d/apcupsd.conf`. Change the source IP and port to what is set in `/etc/default/ups-server.cfg`.
 
 ```bash
