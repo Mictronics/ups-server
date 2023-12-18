@@ -70,7 +70,6 @@ static bool cmd_cap_esr_measurement = false;
 static bool log_file_enable = false;
 
 #define APC_RECORD_COUNT 29
-static FILE *apcout;
 static size_t apcstr_size = 0;
 static char *apcstr = NULL;
 static char *apcline = NULL;
@@ -444,7 +443,7 @@ static void apc_update_status(bicker_ups_status_t *ups)
         free(apcstr);
     }
     // Open new report file in memory
-    apcout = open_memstream(&apcstr, &apcstr_size);
+    FILE *apcout = open_memstream(&apcstr, &apcstr_size);
     if (apcout == NULL)
     {
         lwsl_warn("Creating APC status stream failed.");
