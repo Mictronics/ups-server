@@ -17,7 +17,6 @@ Nice=0
 SyslogIdentifier=BickerUPS
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=autodeploy
 
 [Install]
 WantedBy=default.target
