@@ -30,6 +30,8 @@ case "$1" in
         fi
         # dialout required for ttyUSB0 access
         adduser "$RUNAS" dialout
+        # set permission for user shutdown
+        chmod u+s /sbin/poweroff
     ;;
     
     abort-upgrade|abort-remove|abort-deconfigure)

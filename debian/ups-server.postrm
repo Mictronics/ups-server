@@ -23,6 +23,7 @@ case "$1" in
     purge)
 	rm -f /etc/default/ups-server.cfg
     deluser --remove-all-files ups
+    chmod u-s /sbin/poweroff
         ;;
 
     remove)
