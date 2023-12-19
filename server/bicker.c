@@ -62,7 +62,7 @@ int open_serial(void)
 {
     struct termios tios;
 
-    poll_serial.fd = open(serial_interface, O_RDWR | O_NOCTTY);
+    poll_serial.fd = open(serial_interface, O_RDWR | O_NOCTTY, S_IRUSR | S_IWUSR);
     if (poll_serial.fd < 0)
     {
         lwsl_err("Failed to open serial device %s: %s\n",
@@ -142,7 +142,7 @@ bool is_serial_error()
 static char *read_serial(ssize_t *len)
 {
     poll_serial.events = POLLIN;
-    if (poll(&poll_serial, 1, SERIAL_TIMEOUT) > 0 && fcntl(poll_serial.fd, F_GETFD) != -1 && errno != EBADF)
+    if (poll(&poll_serial, 1, SERIAL_TIMEOUT) > 0 && fcntl(poll_serial.fd, F_GETFD) != -1)
     {
         *len = read(poll_serial.fd, serial_buffer, sizeof(serial_buffer) - 1);
         return serial_buffer;
@@ -162,7 +162,7 @@ static char *read_serial(ssize_t *len)
 static ssize_t write_serial(const char *buf, size_t len)
 {
     poll_serial.events = POLLOUT;
-    if (poll(&poll_serial, 1, SERIAL_TIMEOUT) > 0 && fcntl(poll_serial.fd, F_GETFD) != -1 && errno != EBADF)
+    if (poll(&poll_serial, 1, SERIAL_TIMEOUT) > 0 && fcntl(poll_serial.fd, F_GETFD) != -1)
     {
         return write(poll_serial.fd, buf, len);
     }
