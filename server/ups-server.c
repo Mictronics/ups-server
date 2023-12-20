@@ -125,8 +125,8 @@ struct ws_vhd
     const struct lws_protocols *protocol;
     struct ws_pss *pss_list; // linked-list of live pss
     int len;
-    char buf[100];
-    char *p_apcstr;
+    char buf[LWS_SEND_BUFFER_PRE_PADDING + 100];
+    char apcstr[1024];
 };
 
 static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason,
@@ -223,24 +223,23 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
         // React only on apcaccess status request
         if (len != 8 || memcmp(in, "\x00\x06status", 8) != 0)
         {
-            return -1;
+            return lws_raw_transaction_completed(wsi);
         }
         // Prevent APC status report update as long as transmission is in progress.
         pthread_mutex_lock(&lock_apc_status);
         // Create temporary copy of status string since strtok is modifing the source one.
         // Otherwise consecutive apcaccess request will read only first line of report between updates.
-        vhd->p_apcstr = malloc(apcstr_size);
-        memcpy(vhd->p_apcstr, apcstr, apcstr_size);
+        memcpy(vhd->apcstr, apcstr, MIN(apcstr_size, sizeof(vhd->apcstr)));
         // NIS protocol requires line by line transfer.
-        apcline = strtok(vhd->p_apcstr, ";");
+        apcline = strtok(vhd->apcstr, ";");
         if (apcline != NULL)
         {
             // NIS protocol first two bytes (uint16_t) are the length of the following line.
             vhd->len = strlen(apcline);
-            vhd->buf[0] = 0;
-            vhd->buf[1] = vhd->len; // Set line length
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING] = 0;
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING + 1] = vhd->len; // Set line length
             // Copy line content
-            memcpy(&vhd->buf[2], apcline, vhd->len);
+            memcpy(&vhd->buf[LWS_SEND_BUFFER_PRE_PADDING + 2], apcline, vhd->len);
             vhd->len += 2; // uint16_t + line length
         }
         // Request first transmission callback
@@ -249,10 +248,11 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
 
     case LWS_CALLBACK_RAW_WRITEABLE:
         // Send APC status report line
-        if (lws_write(wsi, (unsigned char *)vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) != vhd->len)
+        if (lws_write(wsi, (unsigned char *)&vhd->buf[LWS_SEND_BUFFER_PRE_PADDING], (unsigned int)vhd->len, LWS_WRITE_RAW | LWS_WRITE_NO_FIN) == -1)
         {
-            lwsl_err("Error writing raw socket.");
-            return 1;
+            size_t remaining = lws_remaining_packet_payload(wsi);
+            lwsl_err("Error writing raw socket: %lu", remaining);
+            return lws_raw_transaction_completed(wsi);
         }
         // Get next APC report line
         apcline = strtok(NULL, ";");
@@ -260,9 +260,9 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
         {
             // See above.
             vhd->len = strlen(apcline);
-            vhd->buf[0] = 0;
-            vhd->buf[1] = vhd->len;
-            memcpy(&vhd->buf[2], apcline, vhd->len);
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING] = 0;
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING + 1] = vhd->len;
+            memcpy(&vhd->buf[LWS_SEND_BUFFER_PRE_PADDING + 2], apcline, vhd->len);
             vhd->len += 2;
             // Request next transmission callback
             lws_callback_on_writable(wsi);
@@ -270,15 +270,13 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
         else
         {
             // No more lines in APC status report. Send zero length to close connection.
-            vhd->buf[0] = 0;
-            vhd->buf[1] = 0;
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING] = 0;
+            vhd->buf[LWS_SEND_BUFFER_PRE_PADDING + 1] = 0;
             vhd->len = 2;
             // Request next transmission callback
             lws_callback_on_writable(wsi);
-            // Remove temporary apcstr copy when sent.
-            free(vhd->p_apcstr);
             // Close connection server side
-            return -1;
+            return lws_raw_transaction_completed(wsi);
         }
         break;
 
@@ -716,6 +714,7 @@ static void *ups_read_handler(void *arg)
     if (apcstr != NULL)
     {
         free(apcstr);
+        apcstr = NULL;
     }
     pthread_exit(NULL);
 }
@@ -738,9 +737,12 @@ int main(int argc, char **argv)
     info.options = LWS_SERVER_OPTION_FALLBACK_TO_RAW;
     info.mounts = &mount;
     info.extensions = NULL;
-    info.timeout_secs = 5;
+    info.timeout_secs = 4;
     info.max_http_header_data = 2048;
     info.vhost_name = "abakan.fitz.box";
+    info.ka_time = 3;
+    info.ka_interval = 1;
+    info.ka_probes = 1;
     /* Parse the command line options */
     if (argp_parse(&argp, argc, argv, 0, 0, 0))
     {
