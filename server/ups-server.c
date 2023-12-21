@@ -250,8 +250,6 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason, void 
         // Send APC status report line
         if (lws_write(wsi, (unsigned char *)&vhd->buf[LWS_SEND_BUFFER_PRE_PADDING], (unsigned int)vhd->len, LWS_WRITE_RAW | LWS_WRITE_NO_FIN) == -1)
         {
-            size_t remaining = lws_remaining_packet_payload(wsi);
-            lwsl_err("Error writing raw socket: %lu", remaining);
             return lws_raw_transaction_completed(wsi);
         }
         // Get next APC report line
