@@ -55,6 +55,14 @@ function UpdateGui(upsStatus) {
   document.getElementById('checkChargerDisabled').checked = upsStatus.monitorStatus & 0x100;
   document.getElementById('checkChargerEnabled').checked = upsStatus.monitorStatus & 0x200;
 
+  if (upsStatus.remainTime > 0) {
+    const date = new Date(0);
+    date.setSeconds(upsStatus.remainTime);
+    document.getElementById('fieldRemainingTime').innerHTML = date.toISOString().substring(11, 19);
+  } else {
+    document.getElementById('fieldRemainingTime').innerHTML = '&infin;';
+  }
+
   /*
    * Disable cap/esr measurement start button as long as it is running.
    */

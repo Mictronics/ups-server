@@ -590,6 +590,9 @@ static void *ups_read_handler(void *arg)
 
     bool was_power_present = false;
     bool shutdown_pending = false;
+    time_t t = time(NULL);
+    int start_soc = 100, old_soc = 100;
+    double remain = 0.0;
 
     while (!ups_thread_exit)
     {
@@ -621,6 +624,7 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "capacity", json_object_new_int((int)bs->capacity));
         json_object_object_add(jroot, "esr", json_object_new_int((int)bs->esr));
         json_object_object_add(jroot, "soc", json_object_new_int((int)bs->soc));
+        json_object_object_add(jroot, "remainTime", json_object_new_double(remain));
         json_object_object_add(jroot, "chargeStatus", json_object_new_int((int)bs->charge_status.value));
         json_object_object_add(jroot, "monitorStatus", json_object_new_int((int)bs->monitor_status.value));
         json_object_object_add(jroot, "deviceStatus", json_object_new_int((int)bs->device_status.value));
@@ -655,6 +659,8 @@ static void *ups_read_handler(void *arg)
             {
                 lwsl_warn("Power fail detected!");
                 was_power_present = false;
+                t = time(NULL);
+                start_soc = bs->soc;
             }
 
             // Proceed if we either shutdown by time or low state of charge
@@ -671,6 +677,13 @@ static void *ups_read_handler(void *arg)
                     pthread_create(&shutdown_thread, NULL, shutdown_handler, NULL);
                     shutdown_pending = true;
                 }
+            }
+
+            if (bs->soc < 100 && bs->soc < old_soc)
+            {
+                double dt = difftime(time(NULL), t);
+                remain = ceilf((dt / (start_soc - (double)bs->soc)) * (double)bs->soc);
+                old_soc = bs->soc;
             }
         }
         // Check if power returned and there is no shutdown request from UPS
@@ -692,6 +705,8 @@ static void *ups_read_handler(void *arg)
                 lwsl_warn("Shutdown cancelled.");
             }
             shutdown_override = false;
+            old_soc = bs->soc;
+            remain = 0.0;
         }
 
         // Update APC status report
