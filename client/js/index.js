@@ -7,6 +7,7 @@ const serverCommunicationWorker = new Worker('./js/ws.worker.js');
  * Update user interface
  */
 function UpdateGui(upsStatus) {
+  document.getElementById('fieldPowerFailCount').value = upsStatus.powerFailCount.toFixed(0);
   document.getElementById('fieldInputVoltage').value = upsStatus.inputVoltage.toFixed(1);
   document.getElementById('fieldInputCurrent').value = (upsStatus.inputCurrent / 1000).toFixed(3);
   document.getElementById('fieldInputPower').value = (upsStatus.inputVoltage * (upsStatus.inputCurrent / 1000)).toFixed(1);

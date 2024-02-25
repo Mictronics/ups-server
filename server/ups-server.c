@@ -63,6 +63,7 @@ pthread_t ups_thread;
 pthread_t shutdown_thread;
 static unsigned int shutdown_delay = 1; // Default 1 second if not set in config
 static int shutdown_soc_percent = 25;   // Default 25% state of charge shutdown
+static unsigned int power_fail_count = 0;
 static bool shutdown_by_time = true;
 static bool shutdown_by_soc = false;
 static bool shutdown_override = false;
@@ -682,6 +683,7 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "series", json_object_new_string(bs->series));
         json_object_object_add(jroot, "firmware", json_object_new_string(bs->firmware));
         json_object_object_add(jroot, "hwRevision", json_object_new_string(bs->hw_revision));
+        json_object_object_add(jroot, "powerFailCount", json_object_new_int((int)power_fail_count));
         // Create JSON string and copy to websocket buffer
         const char *p = json_object_to_json_string_length(jroot, JSON_C_TO_STRING_PLAIN, &len);
         memcpy(&pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], (unsigned char *)p, len);
@@ -712,6 +714,7 @@ static void *ups_read_handler(void *arg)
                 t = time(NULL);
                 start_soc = bs->soc;
                 event_log(EVENT_POWER_FAIL);
+                power_fail_count += 1;
             }
 
             // Proceed if we either shutdown by time or low state of charge
