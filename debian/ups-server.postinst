@@ -32,6 +32,9 @@ case "$1" in
         adduser "$RUNAS" dialout
         # set permission for user shutdown
         chmod u+s /sbin/poweroff
+        # create event log folder
+        mkdir -p /var/lib/ups-server
+        chown "$RUNAS" /var/lib/ups-server
     ;;
     
     abort-upgrade|abort-remove|abort-deconfigure)

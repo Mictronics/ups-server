@@ -44,6 +44,7 @@
 
 static int num_clients = 0;
 static char config_file[PATH_MAX] = "/etc/default/ups-server.cfg";
+static char event_file[PATH_MAX] = "/var/lib/ups-server/event.log";
 static int syslog_options = LOG_PID | LOG_PERROR;
 static config_t cfg;
 
@@ -81,6 +82,15 @@ static int max_backup_time = 0;
 static int wakeup_delay = 0;
 static int max_amps = 0;
 static char hostname[256];
+
+typedef enum
+{
+    EVENT_SERVICE_START,
+    EVENT_SERVICE_STOP,
+    EVENT_POWER_FAIL,
+    EVENT_POWER_GOOD,
+    EVENT_SHUTDOWN,
+} event_t;
 
 /**
  * HTTP protocol and server mount.
@@ -129,6 +139,7 @@ struct ws_vhd
     char apcstr[1024];
 };
 
+static void event_log(event_t ev);
 static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason,
                         void *user, void *in, size_t len);
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
@@ -402,6 +413,7 @@ static void sighandler(int sig)
     lws_cancel_service(context);
     lws_context_destroy(context);
     config_destroy(&cfg);
+    event_log(EVENT_SERVICE_STOP);
     exit(EXIT_SUCCESS);
 }
 
@@ -428,6 +440,7 @@ static void *shutdown_handler(void *arg)
         }
     }
     // Should not get here when cancelled
+    event_log(EVENT_SHUTDOWN);
     lwsl_warn("System shutdown...");
     system("shutdown --poweroff now");
     // Stop this service
@@ -572,6 +585,45 @@ static void log_to_file(bicker_ups_status_t *ups)
 }
 
 /**
+ * Log event to file.
+ */
+static void event_log(event_t ev)
+{
+    FILE *fp;
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char st[20];
+    fp = fopen(event_file, "a");
+    if (fp != NULL)
+    {
+        strftime(st, sizeof(st), "%F %T", t);
+        switch (ev)
+        {
+        case EVENT_SERVICE_START:
+            fprintf(fp, "%s\tService start.\n", st);
+            break;
+        case EVENT_SERVICE_STOP:
+            fprintf(fp, "%s\tService stop.\n", st);
+            break;
+        case EVENT_POWER_FAIL:
+            fprintf(fp, "%s\tPower fail.\n", st);
+            break;
+        case EVENT_POWER_GOOD:
+            fprintf(fp, "%s\tPower good.\n", st);
+            break;
+        default:
+            fprintf(fp, "%s\tUnknown event.\n", st);
+            break;
+        }
+        fclose(fp);
+    }
+    else
+    {
+        lwsl_err("Error writing event log file: %s\n", strerror(errno));
+    }
+}
+
+/**
  * Bicker UPS read thread.
  */
 static void *ups_read_handler(void *arg)
@@ -659,6 +711,7 @@ static void *ups_read_handler(void *arg)
                 was_power_present = false;
                 t = time(NULL);
                 start_soc = bs->soc;
+                event_log(EVENT_POWER_FAIL);
             }
 
             // Proceed if we either shutdown by time or low state of charge
@@ -692,6 +745,7 @@ static void *ups_read_handler(void *arg)
             {
                 lwsl_warn("Power good detected.");
                 was_power_present = true;
+                event_log(EVENT_POWER_GOOD);
             }
 
             if (shutdown_pending == true)
@@ -785,6 +839,8 @@ int main(int argc, char **argv)
         config_lookup_int(&cfg, "server.shutdownSocPercent", (int *)&shutdown_soc_percent);
         config_lookup_bool(&cfg, "server.shutdownByTime", (int *)&shutdown_by_time);
         config_lookup_bool(&cfg, "server.shutdownBySoc", (int *)&shutdown_by_soc);
+        const char *ev_file = NULL;
+        config_lookup_string(&cfg, "server.eventLog", &ev_file);
         const char *buf = NULL;
         config_lookup_string(&cfg, "server.serial", &buf);
         set_serial_interface(buf);
@@ -869,6 +925,7 @@ int main(int argc, char **argv)
 
     /* Start reading serial data from weather station */
     pthread_create(&ups_thread, NULL, ups_read_handler, NULL);
+    event_log(EVENT_SERVICE_START);
 
     //  Infinite loop, to end this server send SIGTERM. (CTRL+C) */
     for (;;)
