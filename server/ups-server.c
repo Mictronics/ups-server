@@ -34,6 +34,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/sysinfo.h>
 #include <math.h>
 #include "help.h"
 #include "bicker.h"
@@ -146,9 +147,9 @@ static int callback_raw(struct lws *wsi, enum lws_callback_reasons reason,
 static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
                               void *user, void *in, size_t len);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
-const char *argp_program_version = "UPS Server v1.0.3";
+const char *argp_program_version = "UPS Server v1.0.5";
 const char args_doc[] = "";
-const char doc[] = "Websocket Server for Bicker PSZ-1063 uExtension module\nLicense GPL-3+\n(C) 2023 Michael Wolf\n"
+const char doc[] = "Websocket Server for Bicker PSZ-1063 uExtension module\nLicense GPL-3+\n(C) 2024 Michael Wolf\n"
                    "A websocket server reading data from a Bicker PSZ-1063 uExtension module in combination with their UPS";
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL};
 
@@ -644,6 +645,8 @@ static void *ups_read_handler(void *arg)
     time_t t = time(NULL);
     int start_soc = 100, old_soc = 100;
     double remain = 0.0;
+    struct sysinfo s_info;
+    uint64_t uptime = 0;
 
     while (!ups_thread_exit)
     {
@@ -684,6 +687,15 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "firmware", json_object_new_string(bs->firmware));
         json_object_object_add(jroot, "hwRevision", json_object_new_string(bs->hw_revision));
         json_object_object_add(jroot, "powerFailCount", json_object_new_int((int)power_fail_count));
+        if (sysinfo(&s_info) == 0)
+        {
+            uptime = (uint64_t)s_info.uptime;
+        }
+        else
+        {
+            uptime = 0;
+        }
+        json_object_object_add(jroot, "uptime", json_object_new_uint64(uptime));
         // Create JSON string and copy to websocket buffer
         const char *p = json_object_to_json_string_length(jroot, JSON_C_TO_STRING_PLAIN, &len);
         memcpy(&pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], (unsigned char *)p, len);

@@ -58,7 +58,7 @@ Nothing special, just build it `dpkg-buildpackage -b -uc`.
 
 ### Installation
 
-Install package `sudo dpkg -i ups-server_1.0.0~dev_amd64.deb`.
+Install package `sudo dpkg -i ups-server_1.0.5~dev_amd64.deb`.
 
 The ups-server binary is installed in `/opt/ups-server` while the web client is in `/opt/ups-server/client`.
 

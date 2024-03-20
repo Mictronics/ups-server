@@ -1,4 +1,4 @@
-ups-server (1.0.4) UNRELEASED; urgency=medium
+ups-server (1.0.5) UNRELEASED; urgency=medium
 
   * Add raw socket with apcupsd compatible output.
   * Fix bug in getting negative numbers from UPS.
@@ -8,5 +8,6 @@ ups-server (1.0.4) UNRELEASED; urgency=medium
   * Added output load indication.
   * Added event log to file.
   * Added power fail counter.
+  * Added server uptime indication. 
 
- -- Michael Wolf <michael@mictronics.de>  Sun, 25 Feb 2024 18:00:21 +0100
+ -- Michael Wolf <michael@mictronics.de>  Wed, 20 Mar 2024 20:14:30 +0100

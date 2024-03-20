@@ -4,6 +4,19 @@
 const serverCommunicationWorker = new Worker('./js/ws.worker.js');
 
 /*
+ * Get uptime string from seconds.
+ */
+function uptimeString(seconds) {
+  let days = Math.floor(seconds / (3600 * 24));
+  seconds -= days * 3600 * 24;
+  let hours = Math.floor(seconds / 3600);
+  seconds -= hours * 3600;
+  let minutes = Math.floor(seconds / 60);
+  seconds -= minutes * 60;
+  return `${days} Days, ${hours}:${minutes}`;
+}
+
+/*
  * Update user interface
  */
 function UpdateGui(upsStatus) {
@@ -55,6 +68,7 @@ function UpdateGui(upsStatus) {
   document.getElementById('checkEsrMeasurementFail').checked = upsStatus.monitorStatus & 0x40;
   document.getElementById('checkChargerDisabled').checked = upsStatus.monitorStatus & 0x100;
   document.getElementById('checkChargerEnabled').checked = upsStatus.monitorStatus & 0x200;
+  document.getElementById('fieldUptime').innerHTML = uptimeString(upsStatus.uptime);
 
   if (upsStatus.remainTime > 0) {
     const date = new Date(0);
