@@ -7,13 +7,14 @@ const serverCommunicationWorker = new Worker('./js/ws.worker.js');
  * Get uptime string from seconds.
  */
 function uptimeString(seconds) {
+  const zeroPad = (num, places) => String(num).padStart(places, '0');
   let days = Math.floor(seconds / (3600 * 24));
   seconds -= days * 3600 * 24;
   let hours = Math.floor(seconds / 3600);
   seconds -= hours * 3600;
   let minutes = Math.floor(seconds / 60);
   seconds -= minutes * 60;
-  return `${days} Days, ${hours}:${minutes}`;
+  return `${days} Days, ${zeroPad(hours, 2)}:${zeroPad(minutes, 2)}`;
 }
 
 /*
