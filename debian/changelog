@@ -1,5 +1,5 @@
-ups-server (1.0.6) UNRELEASED; urgency=medium
+ups-server (1.0.7) UNRELEASED; urgency=medium
 
-  * Wire up eventLog config, drop pwsbuffer alias, trim unused eslint deps. 
+  * Fixed typo in config and added dynamic port allocation in worker. 
 
- -- Michael Wolf <michael@mictronics.de>  Sat, 12 Sep 2026 12:56:05 +0200
+ -- Michael Wolf <michael@mictronics.de>  Sat, 12 Sep 2026 13:13:47 +0200
