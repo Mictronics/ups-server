@@ -14,7 +14,7 @@ if (connection === null) {
 function connect() {
   console.info(`Location hostname: ${location.hostname}`);
 
-  socket = new WebSocket(`ws://${location.hostname}:10024`, 'broadcast');
+  socket = new WebSocket(`ws://${location.hostname}:${location.port}`, 'broadcast');
   socket.binaryType = 'arraybuffer';
   socket.onmessage = (e) => {
     const msg = JSON.parse(e.data);
