@@ -35,6 +35,9 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/sysinfo.h>
+#include <sys/stat.h>
+#include <sys/param.h>
+#include <signal.h>
 #include <math.h>
 #include "help.h"
 #include "bicker.h"
@@ -55,7 +58,6 @@ static int daemonize = 0;
 static struct lws_context *context;
 static struct lws_context_creation_info info;
 static unsigned char wsbuffer[WSBUFFERSIZE];
-static unsigned char *pwsbuffer = wsbuffer;
 static int wsbuffer_len = 0;
 pthread_mutex_t lock_established_conns = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lock_apc_status = PTHREAD_MUTEX_INITIALIZER;
@@ -351,7 +353,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
         if (pss->publishing)
             break;
         /* notice we allowed for LWS_PRE in the payload already */
-        vhd->len = lws_write(wsi, &pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], wsbuffer_len, LWS_WRITE_TEXT);
+        vhd->len = lws_write(wsi, &wsbuffer[LWS_SEND_BUFFER_PRE_PADDING], wsbuffer_len, LWS_WRITE_TEXT);
         if (vhd->len < (int)wsbuffer_len)
         {
             lwsl_err("Error writing to websocket");
@@ -371,7 +373,7 @@ static int callback_broadcast(struct lws *wsi, enum lws_callback_reasons reason,
             break;
         pthread_mutex_lock(&lock_established_conns);
         /* Reply empty json object on unknown request */
-        memcpy(&pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], "\"{}\"", 4);
+        memcpy(&wsbuffer[LWS_SEND_BUFFER_PRE_PADDING], "\"{}\"", 4);
         wsbuffer_len = 4;
         handle_client_request(in, len);
         pthread_mutex_unlock(&lock_established_conns);
@@ -698,7 +700,7 @@ static void *ups_read_handler(void *arg)
         json_object_object_add(jroot, "uptime", json_object_new_uint64(uptime));
         // Create JSON string and copy to websocket buffer
         const char *p = json_object_to_json_string_length(jroot, JSON_C_TO_STRING_PLAIN, &len);
-        memcpy(&pwsbuffer[LWS_SEND_BUFFER_PRE_PADDING], (unsigned char *)p, len);
+        memcpy(&wsbuffer[LWS_SEND_BUFFER_PRE_PADDING], (unsigned char *)p, len);
         wsbuffer_len = len;
         lws_callback_on_writable_all_protocol(context, &protocols[1]);
         // Send immediately to web client
@@ -855,7 +857,11 @@ int main(int argc, char **argv)
         config_lookup_bool(&cfg, "server.shutdownByTime", (int *)&shutdown_by_time);
         config_lookup_bool(&cfg, "server.shutdownBySoc", (int *)&shutdown_by_soc);
         const char *ev_file = NULL;
-        config_lookup_string(&cfg, "server.eventLog", &ev_file);
+        if (config_lookup_string(&cfg, "server.eventLog", &ev_file))
+        {
+            strncpy(event_file, ev_file, sizeof event_file);
+            event_file[(sizeof event_file) - 1] = '\0';
+        }
         const char *buf = NULL;
         config_lookup_string(&cfg, "server.serial", &buf);
         set_serial_interface(buf);
