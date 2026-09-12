@@ -1,0 +1,104 @@
+:root {
+  --ups-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--ups-font);
+  background-color: #f4f6f8;
+  margin: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card {
+  flex: 1 1 260px;
+  min-width: 240px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  font-weight: 600;
+  background-color: transparent;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+}
+
+.field-label {
+  flex: 0 0 10em;
+  color: var(--bs-secondary-color);
+  font-size: 0.9rem;
+}
+
+.field-text {
+  font-weight: 500;
+}
+
+.field-unit {
+  width: 2em;
+  color: var(--bs-secondary-color);
+}
+
+.form-control.form-control-plaintext {
+  width: 6em;
+  padding: 0.1rem 0.25rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.progress {
+  height: 0.5rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.badge-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  align-content: flex-start;
+  gap: 0.4rem;
+}
+
+.status-badge {
+  border: 1px solid var(--bs-border-color);
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+
+.status-badge.active {
+  border-color: #198754;
+  background-color: #198754;
+  color: #fff;
+}
+
+.spinner {
+  position: fixed;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 5rem;
+  height: 5rem;
+}
+
+footer {
+  margin-top: 1rem;
+  color: var(--bs-secondary-color);
+}

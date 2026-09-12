@@ -8,267 +8,178 @@
     <meta name="author" content="Michael Wolf" />
     <link rel="manifest" href="manifest.json" />
     <link rel="stylesheet" type="text/css" href="./css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="./css/custom.css" />
     <script type="text/javascript" src="./js/index.js"></script>
-    <style>
-      .form-control {
-        display: inline;
-        width: 5em;
-        padding: 0.1rem 0.5rem;
-      }
-      .form-label-text {
-        width: 10em;
-      }
-      .list-group-item {
-        padding: 0.25rem 0.25rem;
-      }
-      .form-label {
-        margin: 0;
-      }
-      .spinner {
-        position: fixed;
-        z-index: 1;
-        top: 50%;
-        left: 50%;
-        width: 5rem;
-        height: 5rem;
-      }
-    </style>
   </head>
-  <body class="m-1">
+  <body>
     <div id="connectionSpinner" class="spinner spinner-border" role="status"></div>
     <h1><img src="img/favicon32.png" class="img-fluid me-3" />UPS Status</h1>
-    <div class="d-flex flex-row flex-wrap justify-content-start">
-      <ul class="list-group m-1">
-        <li class="list-group-item list-group-item-light">Series</li>
-        <li class="list-group-item" id="fieldSeries"></li>
-        <li class="list-group-item list-group-item-light">Type</li>
-        <li class="list-group-item" id="fieldType"></li>
-        <li class="list-group-item list-group-item-light">Hardware</li>
-        <li class="list-group-item" id="fieldHardware"></li>
-        <li class="list-group-item list-group-item-light">Firmware</li>
-        <li class="list-group-item" id="fieldFirmware"></li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Power Fail Count</label>
-          <input id="fieldPowerFailCount" type="text" class="form-control" />
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Input Voltage</label>
-          <input id="fieldInputVoltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Input Current</label>
-          <input id="fieldInputCurrent" type="text" class="form-control" />
-          <label class="form-label">A</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Input Power</label>
-          <input id="fieldInputPower" type="text" class="form-control" />
-          <label class="form-label">W</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Output Voltage</label>
-          <input id="fieldOutputVoltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Output Current</label>
-          <input id="fieldOutputCurrent" type="text" class="form-control" />
-          <label class="form-label">A</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Output Power</label>
-          <input id="fieldOutputPower" type="text" class="form-control" />
-          <label class="form-label">W</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Output Load</label>
-          <input id="fieldOutputLoad" type="text" class="form-control" />
-          <label class="form-label">%</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Battery Voltage</label>
-          <input id="fieldBatteryVoltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Battery Current</label>
-          <input id="fieldBatteryCurrent" type="text" class="form-control" />
-          <label class="form-label">A</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Cell 1 Voltage</label>
-          <input id="fieldCell1Voltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Cell 2 Voltage</label>
-          <input id="fieldCell2Voltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Cell 3 Voltage</label>
-          <input id="fieldCell3Voltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Cell 4 Voltage</label>
-          <input id="fieldCell4Voltage" type="text" class="form-control" />
-          <label class="form-label">V</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Capacity</label>
-          <input id="fieldCapacity" type="text" class="form-control" />
-          <label class="form-label">F</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">ESR</label>
-          <input id="fieldEsr" type="text" class="form-control" />
-          <label class="form-label">mΩ</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">State of Charge</label>
-          <input id="fieldSoc" type="text" class="form-control" />
-          <label class="form-label">%</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Board Temperature</label>
-          <input id="fieldBoardTemperature" type="text" class="form-control" />
-          <label class="form-label">°C</label>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Remaining Time</label>
-          <span id="fieldRemainingTime"></span>
-        </li>
-        <li class="list-group-item">
-          <label class="form-label form-label-text">Uptime</label>
-          <span id="fieldUptime"></span>
-        </li>
-        <li class="list-group-item">
-          <button id="buttonCapEsr" type="button" class="btn btn-sm btn-secondary">Start Cap/ESR Measurement</button>
-        </li>
-      </ul>
-      <div class="m-1">
-        <ul class="list-group">
-          <li class="list-group-item list-group-item-light">Device Status</li>
-          <li class="list-group-item">
-            <input id="checkDevCharging" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Charging</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkDevDischarging" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Discharging</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkDevPowerPresent" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Power Present</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkDevBatteryPresent" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Battery Present</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkDevShutdownSet" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Shutdown Set</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkDevOverCurrent" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Over Current</label>
-          </li>
-        </ul>
+    <div class="dashboard">
+      <div class="card">
+        <div class="card-header">Device Info</div>
+        <div class="card-body">
+          <div class="field-row"><span class="field-label">Series</span><span id="fieldSeries" class="field-text"></span></div>
+          <div class="field-row"><span class="field-label">Type</span><span id="fieldType" class="field-text"></span></div>
+          <div class="field-row"><span class="field-label">Hardware</span><span id="fieldHardware" class="field-text"></span></div>
+          <div class="field-row"><span class="field-label">Firmware</span><span id="fieldFirmware" class="field-text"></span></div>
+          <div class="field-row"><span class="field-label">Uptime</span><span id="fieldUptime" class="field-text"></span></div>
+        </div>
       </div>
-      <div class="m-1">
-        <ul class="list-group">
-          <li class="list-group-item list-group-item-light">Charging Status</li>
-          <li class="list-group-item">
-            <input id="checkCharging" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Charging</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkBackup" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Backup</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkConstantVoltage" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Constant Voltage</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkConstantCurrent" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Constant Current</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkUnderVoltage" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Under Voltage</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkInputCurrentLimit" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Input Current Limit</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapacitorPowerGood" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Capacitor Power Good</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapacitorShunting" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Capacitor Shunting</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapacitorBalancing" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Capacitor Balancing</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCharging" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Charger disabled</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkInputPowerFail" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Input power fail</label>
-          </li>
-        </ul>
-      </div>
-      <div class="m-1">
-        <ul class="list-group">
-          <li class="list-group-item list-group-item-light">Monitoring Status</li>
-          <li class="list-group-item">
-            <input id="checkCapEsrMeasurement" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Cap/ESR running</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapEsrWaitingTime" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Cap/ESR time</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapEsrWaitingCondition" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Cap/ESR condition</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapMeasurementComplete" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Cap complete</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkEsrMeasurementComplete" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">ESR complete</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkCapMeasurementFail" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Cap fail</label>
-          </li>
-          <li class="list-group-item">
-            <input id="checkEsrMeasurementFail" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">ESR fail</label>
-          </li>
-          <div class="list-group-item">
-            <input id="checkChargerDisabled" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Charger disabled</label>
+
+      <div class="card">
+        <div class="card-header">Power</div>
+        <div class="card-body">
+          <div class="field-row">
+            <span class="field-label">Power Fail Count</span>
+            <input id="fieldPowerFailCount" type="text" class="form-control form-control-plaintext" readonly />
           </div>
-          <li class="list-group-item">
-            <input id="checkChargerEnabled" class="form-check-input" type="checkbox" />
-            <label class="form-check-label">Charger enabled</label>
-          </li>
-        </ul>
+          <div class="field-row">
+            <span class="field-label">Input Voltage</span>
+            <input id="fieldInputVoltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Input Current</span>
+            <input id="fieldInputCurrent" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">A</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Input Power</span>
+            <input id="fieldInputPower" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">W</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Output Voltage</span>
+            <input id="fieldOutputVoltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Output Current</span>
+            <input id="fieldOutputCurrent" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">A</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Output Power</span>
+            <input id="fieldOutputPower" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">W</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Output Load</span>
+            <input id="fieldOutputLoad" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-label="Output Load" aria-valuemin="0" aria-valuemax="100">
+            <div id="barOutputLoad" class="progress-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Battery</div>
+        <div class="card-body">
+          <div class="field-row">
+            <span class="field-label">Battery Voltage</span>
+            <input id="fieldBatteryVoltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Battery Current</span>
+            <input id="fieldBatteryCurrent" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">A</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Cell 1 Voltage</span>
+            <input id="fieldCell1Voltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Cell 2 Voltage</span>
+            <input id="fieldCell2Voltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Cell 3 Voltage</span>
+            <input id="fieldCell3Voltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Cell 4 Voltage</span>
+            <input id="fieldCell4Voltage" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">V</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Capacity</span>
+            <input id="fieldCapacity" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">F</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">ESR</span>
+            <input id="fieldEsr" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">mΩ</span>
+          </div>
+          <div class="field-row">
+            <span class="field-label">State of Charge</span>
+            <input id="fieldSoc" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">%</span>
+          </div>
+          <div class="progress" role="progressbar" aria-label="State of Charge" aria-valuemin="0" aria-valuemax="100">
+            <div id="barSoc" class="progress-bar"></div>
+          </div>
+          <div class="field-row">
+            <span class="field-label">Board Temperature</span>
+            <input id="fieldBoardTemperature" type="text" class="form-control form-control-plaintext" readonly />
+            <span class="field-unit">°C</span>
+          </div>
+          <div class="field-row"><span class="field-label">Remaining Time</span><span id="fieldRemainingTime" class="field-text"></span></div>
+          <button id="buttonCapEsr" type="button" class="btn btn-sm btn-secondary mt-2">Start Cap/ESR Measurement</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Device Status</div>
+        <div class="card-body badge-group">
+          <span id="checkDevCharging" class="badge status-badge">Charging</span>
+          <span id="checkDevDischarging" class="badge status-badge">Discharging</span>
+          <span id="checkDevPowerPresent" class="badge status-badge">Power Present</span>
+          <span id="checkDevBatteryPresent" class="badge status-badge">Battery Present</span>
+          <span id="checkDevShutdownSet" class="badge status-badge">Shutdown Set</span>
+          <span id="checkDevOverCurrent" class="badge status-badge">Over Current</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Charging Status</div>
+        <div class="card-body badge-group">
+          <span id="checkCharging" class="badge status-badge">Charging</span>
+          <span id="checkBackup" class="badge status-badge">Backup</span>
+          <span id="checkConstantVoltage" class="badge status-badge">Constant Voltage</span>
+          <span id="checkConstantCurrent" class="badge status-badge">Constant Current</span>
+          <span id="checkUnderVoltage" class="badge status-badge">Under Voltage</span>
+          <span id="checkInputCurrentLimit" class="badge status-badge">Input Current Limit</span>
+          <span id="checkCapacitorPowerGood" class="badge status-badge">Capacitor Power Good</span>
+          <span id="checkCapacitorShunting" class="badge status-badge">Capacitor Shunting</span>
+          <span id="checkCapacitorBalancing" class="badge status-badge">Capacitor Balancing</span>
+          <span id="checkChargeDisabled" class="badge status-badge">Charger disabled</span>
+          <span id="checkInputPowerFail" class="badge status-badge">Input power fail</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Monitoring Status</div>
+        <div class="card-body badge-group">
+          <span id="checkCapEsrMeasurement" class="badge status-badge">Cap/ESR running</span>
+          <span id="checkCapEsrWaitingTime" class="badge status-badge">Cap/ESR time</span>
+          <span id="checkCapEsrWaitingCondition" class="badge status-badge">Cap/ESR condition</span>
+          <span id="checkCapMeasurementComplete" class="badge status-badge">Cap complete</span>
+          <span id="checkEsrMeasurementComplete" class="badge status-badge">ESR complete</span>
+          <span id="checkCapMeasurementFail" class="badge status-badge">Cap fail</span>
+          <span id="checkEsrMeasurementFail" class="badge status-badge">ESR fail</span>
+          <span id="checkChargerDisabled" class="badge status-badge">Charger disabled</span>
+          <span id="checkChargerEnabled" class="badge status-badge">Charger enabled</span>
+        </div>
       </div>
     </div>
-    <footer class="fw-lighter fix-bottom float-right">
+    <footer class="fw-lighter">
       UPS Status v1.0.7, 2026 Michael Wolf, <a href="https://www.mictronics.de" target="_blank">mictronics.de</a>
     </footer>
   </body>
